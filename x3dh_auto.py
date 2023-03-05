@@ -170,6 +170,11 @@ class x3dh_auto:
         print("Bob's Signed Pre Key (after Key Agreement): ", bundle_b_after.signed_pre_key)
         # print("Bob's Signed Pre Key Signature (after Key Agreement): ", bundle_b_after.signed_pre_key_sig)
 
+        # Obviously there should only be one return value, one for the initiator (active), and one for the responder
+        # (passive).
+
+        return shared_secret_active, shared_secret_passive
+
 
 
 if __name__ == '__main__':
