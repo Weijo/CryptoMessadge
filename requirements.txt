@@ -2,3 +2,4 @@ X3DH==1.0.3
 opaque==0.2.0
 pysodium==0.7.12
 pycryptodome==3.17
+cryptography==2.8

@@ -1,7 +1,3 @@
-# Requirements:
-# apt install python3 python3-pip
-# pip3 install cryptography==2.8 pycrypto
-
 import base64
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
