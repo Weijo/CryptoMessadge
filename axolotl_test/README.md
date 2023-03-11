@@ -9,7 +9,7 @@ python setup.py install
 
 ## Windows
  - ```git clone https://github.com/tgalal/python-axolotl```
- - Install [mingw](http://www.mingw.org/) compiler
+ - Install [mingw](https://sourceforge.net/projects/mingw/) compiler
  - Add mingw to your PATH
  - In PYTHONPATH\Lib\distutils create a file called distutils.cfg and add these lines:
  
@@ -20,10 +20,13 @@ python setup.py install
 
  - Install gcc: ```mingw-get.exe install gcc```
  - Install [zlib](http://www.zlib.net/)
+    - You can use this repo to download zlib easily (https://github.com/horta/zlib.install)
+    - Make sure you have CMake: https://cmake.org/download/
  - ```python setup.py install```
 
 
 # Usage
+- Open cmd.exe (for windows)
 ```
 python server.py
 python client_alice.py
