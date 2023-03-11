@@ -1,0 +1,70 @@
+syntax = "proto3";
+package signalc_group;
+
+message BaseResponse {
+    string message = 1;
+}
+
+// register key of user when join to group
+message GroupRegisterSenderKeyRequest {
+    string groupId = 1;
+    string clientId = 2;
+    int32 deviceId = 3;
+    bytes senderKeyDistribution = 4;
+}
+message GroupRegisterSenderKeyResponse {
+    string message = 1;
+}
+
+// Get Key of an User in Group
+message GroupSenderKeyObject {
+    string senderId = 2;
+    int32 deviceId = 3;
+    bytes senderKeyDistribution = 4;
+}
+message GroupGetSenderKeyRequest {
+  string groupId = 1;
+  string senderId = 2;
+}
+message GroupGetSenderKeyResponse {
+  string groupId = 1;
+  GroupSenderKeyObject senderKey = 2;
+}
+
+// Get Key of all User in Group
+message GroupGetAllSenderKeyRequest {
+  string groupId = 1;
+}
+message GroupGetAllSenderKeyResponse {
+    string groupId = 1;
+    repeated GroupSenderKeyObject allSenderKey = 2;
+}
+
+// Publish to group
+message GroupPublishRequest {
+  string senderId = 1;
+  string groupId = 2;
+  bytes message = 3;
+}
+
+// Subcribe and listen message from group
+message GroupSubscribeAndListenRequest {
+  string clientId = 1;
+}
+
+// Publication stream
+message GroupPublication {
+  string senderId = 1;
+  string groupId = 2;
+  bytes message = 3;
+}
+
+service GroupSenderKeyDistribution {
+      rpc RegisterSenderKeyGroup (GroupRegisterSenderKeyRequest) returns (GroupRegisterSenderKeyResponse);
+      rpc GetSenderKeyInGroup (GroupGetSenderKeyRequest) returns (GroupGetSenderKeyResponse);
+      rpc GetAllSenderKeyInGroup (GroupGetAllSenderKeyRequest) returns (GroupGetAllSenderKeyResponse);
+
+      rpc Subscribe (GroupSubscribeAndListenRequest) returns (BaseResponse);
+      rpc Listen (GroupSubscribeAndListenRequest) returns (stream GroupPublication);
+      rpc Publish (GroupPublishRequest) returns (BaseResponse);
+}
