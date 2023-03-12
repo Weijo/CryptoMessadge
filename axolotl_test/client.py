@@ -74,11 +74,19 @@ class Client:
                                              senderId=self.client_id)
         response = self.stub.Publish(request)
 
-    def encrypt_message(self, message, receiver_id):
+    def GetReceiverKey(self, receiver_id):
         # get sender client key first (need to store in second time)
         request_receiver_key = signalc_pb2.SignalKeysUserRequest(clientId=receiver_id)
+
         response_receiver_key = self.stub.GetKeyBundleByUserId(request_receiver_key)
-        #print("Encrypt Message - get receiver key from server =", response_receiver_key)
+
+        if response_receiver_key.clientId == 'none':
+            return None
+
+        return response_receiver_key
+    
+    def encrypt_message(self, message, receiver_id):
+        response_receiver_key = self.GetReceiverKey(receiver_id)
 
         # build session
         my_session_builder = SessionBuilder(self.my_store, self.my_store, self.my_store, self.my_store, receiver_id, 1)
