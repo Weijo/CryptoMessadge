@@ -4,6 +4,7 @@ import base64
 import json
 from Crypto.Cipher import ChaCha20_Poly1305
 
+
 class opaqueClient:
     def __init__(self, server) -> None:
         self.server = server
@@ -38,7 +39,7 @@ class opaqueClient:
             # Step 3: The user finalizes the registration using the response from the server
             # export key is not needed
             user_record, _ = opaque.FinalizeRequest(security_context, server_pub, ids)
-            
+
             user_record_b64 = base64.b64encode(user_record)
 
             print(f"{user_record_b64=}")
@@ -89,7 +90,7 @@ class opaqueClient:
         else:
             print("Invalid credential")
             self.sk = b""
-    
+
     def sendMessage(self, message: bytes) -> bytes:
         if self.sk == b"":
             print("No authenticated session found")
@@ -98,11 +99,10 @@ class opaqueClient:
         data = self.encrypt(message)
         self.sock.sendall(data.encode())
 
-        json_resp  = self.sock.recv(1024).strip()
+        json_resp = self.sock.recv(1024).strip()
         resp = self.decrypt(json_resp)
         return resp
 
-        
     def encrypt(self, data: bytes) -> bytes:
         """
         Encrypt using ChaCha20_Poly1305
@@ -114,8 +114,8 @@ class opaqueClient:
         cipher.update(header)
         ciphertext, tag = cipher.encrypt_and_digest(data)
 
-        jk = [ 'nonce', 'header', 'ciphertext', 'tag' ]
-        jv = [ base64.b64encode(x).decode('utf-8') for x in (cipher.nonce, header, ciphertext, tag) ]
+        jk = ['nonce', 'header', 'ciphertext', 'tag']
+        jv = [base64.b64encode(x).decode('utf-8') for x in (cipher.nonce, header, ciphertext, tag)]
         result = json.dumps(dict(zip(jk, jv)))
         return result
 
@@ -125,9 +125,9 @@ class opaqueClient:
         """
         try:
             b64 = json.loads(json_input)
-            jk = [ 'nonce', 'header', 'ciphertext', 'tag' ]
-            jv = {k:base64.b64decode(b64[k]) for k in jk}
-            
+            jk = ['nonce', 'header', 'ciphertext', 'tag']
+            jv = {k: base64.b64decode(b64[k]) for k in jk}
+
             key = self.sk[:32]
             cipher = ChaCha20_Poly1305.new(key=key, nonce=jv['nonce'])
             cipher.update(jv['header'])
@@ -136,12 +136,12 @@ class opaqueClient:
             return plaintext
         except (ValueError, KeyError):
             print("Incorrect decryption")
-        
+
         return b""
 
     def close(self):
         self.sock.close()
-    
+
     def sendToServer(self, request: bytes, request_type: int) -> bytes:
         """
         type: 1 - register
@@ -153,7 +153,6 @@ class opaqueClient:
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.connect(self.server)
-
 
             sock.sendall(request)
 

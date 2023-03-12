@@ -5,7 +5,8 @@ import opaqueServer
 ADDRESS = ("127.0.0.1", 8888)
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
-signal.signal(signal.SIGPIPE,signal.SIG_DFL)
+signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
 
 class MyTCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
@@ -24,7 +25,7 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
         elif request_type == 2:
             # Type 2 request: login
             if opaqueHandler.handle_login(self.request, request_data):
-                 # Continuously receive and process messages from client
+                # Continuously receive and process messages from client
                 while True:
                     # Receive encrypted message from client
                     encrypted_data = self.request.recv(1024)
@@ -37,6 +38,12 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                     # For now send back the data
                     encrypted_response = opaqueHandler.encrypt(data)
                     self.request.sendall(encrypted_response.encode())
+
+        # For now, just put the signal stuff here.
+        elif request_type == 3:
+            # Type 3 request: Signal
+            pass
+
         else:
             # Unknown request type: send an error message back to the client
             response_data = b"Error: unknown request type"

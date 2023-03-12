@@ -10,8 +10,10 @@ from os.path import exists
 
 CLIENT_STORE_FILEPATH = "client_store.json"
 
+
 class ClientKey:
-    def __init__(self, client_id, registration_id, device_id, identity_key_public, prekey_id, prekey, signed_prekey_id, signed_prekey, signed_prekey_signature):
+    def __init__(self, client_id, registration_id, device_id, identity_key_public, prekey_id, prekey, signed_prekey_id,
+                 signed_prekey, signed_prekey_signature):
         self.client_id = client_id
         self.registration_id = registration_id
         self.device_id = device_id
@@ -35,12 +37,15 @@ class ClientKey:
             "signed_prekey_signature": base64.b64encode(self.signed_prekey_signature).decode('utf-8')
         }
 
+
 class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
     def __init__(self):
         self.queues = {}
 
     def RegisterBundleKey(self, request, context):
-        client_combine_key = ClientKey(request.clientId, request.registrationId, request.deviceId, request.identityKeyPublic, request.preKeyId, request.preKey, request.signedPreKeyId, request.signedPreKey, request.signedPreKeySignature)
+        client_combine_key = ClientKey(request.clientId, request.registrationId, request.deviceId,
+                                       request.identityKeyPublic, request.preKeyId, request.preKey,
+                                       request.signedPreKeyId, request.signedPreKey, request.signedPreKeySignature)
 
         print('***** CLIENT REGISTER KEYS *****')
         print(request)
@@ -56,7 +61,7 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
             with open(CLIENT_STORE_FILEPATH) as json_file:
                 data = json.load(json_file)
         return data
-    
+
     def SaveClientStore(self, client_combine_key):
         data = self.GetClientStore()
 
@@ -64,7 +69,7 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
 
         with open(CLIENT_STORE_FILEPATH, 'w') as f:
             json.dump(data, f, ensure_ascii=False)
-    
+
     def GetKeyBundleByUserId(self, request, context):
         client_id = request.clientId
         print(client_id)
@@ -83,16 +88,16 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
             )
         else:
             response = signalc_pb2.SignalKeysUserResponse(
-                    clientId='none',
-                    registrationId=0,
-                    deviceId=0,
-                    identityKeyPublic=str.encode("none"),
-                    preKeyId=0,
-                    preKey=str.encode("none"),
-                    signedPreKeyId=0,
-                    signedPreKey=str.encode("none"),
-                    signedPreKeySignature=str.encode("none")
-                )
+                clientId='none',
+                registrationId=0,
+                deviceId=0,
+                identityKeyPublic=str.encode("none"),
+                preKeyId=0,
+                preKey=str.encode("none"),
+                signedPreKeyId=0,
+                signedPreKey=str.encode("none"),
+                signedPreKeySignature=str.encode("none")
+            )
         return response
 
     def Publish(self, request, context):
@@ -104,12 +109,14 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
         if request.clientId in self.queues:
             while True:
                 publication = self.queues[request.clientId].get()  # blocking until the next .put for this queue
-                publication_response = signalc_pb2.Publication(message=publication.message, senderId=publication.senderId)
+                publication_response = signalc_pb2.Publication(message=publication.message,
+                                                               senderId=publication.senderId)
                 yield publication_response
 
     def Subscribe(self, request, context):
         self.queues[request.clientId] = Queue()
         return signalc_pb2.BaseResponse(message='success')
+
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

@@ -2,9 +2,10 @@ import opaqueClient
 
 ADDRESS = ("localhost", 8888)
 
+
 def Connect2Server():
     client = opaqueClient.opaqueClient(ADDRESS)
-    username = "bob"
+    username = input("Enter your username: ")
     password = "password"
 
     client.register(username, password)
@@ -16,6 +17,7 @@ def Connect2Server():
     print(resp)
 
     client.close()
+
 
 if __name__ == "__main__":
     Connect2Server()

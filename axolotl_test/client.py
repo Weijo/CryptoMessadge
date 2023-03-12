@@ -1,5 +1,8 @@
 import threading
 import grpc
+from axolotl.invalidmessageexception import InvalidMessageException
+from axolotl.untrustedidentityexception import UntrustedIdentityException
+
 from proto import signalc_pb2
 from proto import signalc_pb2_grpc
 from axolotl.sessionbuilder import SessionBuilder
@@ -66,13 +69,18 @@ class Client:
             print("From {}: {}".format(publication.senderId, message_plain_text))
 
     def publish(self, message, receiver_id):
-        # encrypt message first
-        out_goging_message = self.encrypt_message(message, receiver_id)
+        try:
+            # encrypt message first
+            out_goging_message = self.encrypt_message(message, receiver_id)
+        except UntrustedIdentityException:
+            print("publish - Unable to encrypt message to be sent, because a new session started on the recipient side.")
 
-        # send message
-        request = signalc_pb2.PublishRequest(receiveId=receiver_id, message=out_goging_message,
-                                             senderId=self.client_id)
-        response = self.stub.Publish(request)
+        else:
+            # send message
+            request = signalc_pb2.PublishRequest(receiveId=receiver_id, message=out_goging_message,
+                                                 senderId=self.client_id)
+            response = self.stub.Publish(request)
+
 
     def GetReceiverKey(self, receiver_id):
         # get sender client key first (need to store in second time)
@@ -127,7 +135,13 @@ class Client:
         incoming_message = PreKeyWhisperMessage(serialized=message)
         # init session to decrypt
         my_session_cipher = SessionCipher(self.my_store, self.my_store, self.my_store, self.my_store, sender_id, 1)
-        message_plain_text = my_session_cipher.decryptPkmsg(incoming_message)
-        print("Decrypt Message - Plain Text Message =", message_plain_text)
+        try:
+            message_plain_text = my_session_cipher.decryptPkmsg(incoming_message)
+        except UntrustedIdentityException:
+            print("Decrypt Message - Unable to decrypt, because a new session started on the sender side.")
+        except InvalidMessageException:
+            print("Decrypt Message - Unable to decrypt, because sender and recipient are the same.")
+        else:
+            print("Decrypt Message - Plain Text Message =", message_plain_text)
         # return encrypt message
         return 

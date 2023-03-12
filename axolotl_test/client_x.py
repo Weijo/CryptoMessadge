@@ -17,5 +17,7 @@ if response_receiver_key is not None:
     while True:
         message = input("")
         x.publish(message, recipient_id)
+
+
 else:
     print("The username '{}' cannot be found.".format(recipient_id))
