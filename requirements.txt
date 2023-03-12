@@ -1,6 +1,6 @@
 opaque==0.2.0
 pysodium==0.7.12
 pycryptodome==3.17
-grpcio==1.32.0
-grpcio-tools==1.32.0
+grpcio
+grpcio-tools
 protobuf==3.20.0
