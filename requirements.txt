@@ -3,6 +3,5 @@ opaque==0.2.0
 pysodium==0.7.12
 pycryptodome==3.17
 cryptography==2.8
-python-axolotl==0.2.3
 grpcio==1.32.0
 grpcio-tools==1.32.0
