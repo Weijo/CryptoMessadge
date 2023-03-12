@@ -4,3 +4,4 @@ pycryptodome==3.17
 grpcio
 grpcio-tools
 protobuf==3.20.0
+python-axolotl-curve25519
