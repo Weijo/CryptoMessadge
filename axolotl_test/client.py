@@ -86,7 +86,46 @@ class Client:
         request = signalc_pb2.SubscribeAndListenRequest(clientId=self.client_id)
         for publication in self.stub.Listen(request):  # this line will wait for new messages from the server
             message_plain_text = self.decrypt_message(publication.message, publication.senderId)
-            print("From {}: {}".format(publication.senderId, message_plain_text))
+            print("\nFrom {}: {}".format(publication.senderId, message_plain_text.decode('utf-8')))
+
+            self.save_messages_to_local(publication.senderId, self.client_id, message_plain_text.decode('utf-8'))
+
+    def save_messages_to_local(self, senderId, recipientId, message_plain_text):
+        import datetime
+        current_time = datetime.datetime.now()
+        
+        convo_id = self.get_other_user_id(senderId, recipientId)
+
+        message = {
+                    "senderId": senderId,
+                    "recipientId": recipientId, 
+                    "date":current_time.strftime("%x"), 
+                    "time": current_time.strftime("%X"),
+                    "message":message_plain_text
+                }
+
+        FILE_PATH = self.client_id + "_messages.json"
+        file_exists = exists(FILE_PATH)
+        if file_exists:
+            with open(FILE_PATH) as json_file:
+                messages = json.load(json_file)
+            
+            if convo_id not in messages:
+                messages[convo_id] = {}
+        else:
+            messages = {convo_id: {}}
+        
+        messages[convo_id][current_time.strftime("%x %X")] = message
+        
+        with open(FILE_PATH, 'w') as f:
+            json.dump(messages, f, ensure_ascii=False)
+
+    def get_other_user_id(self, senderId, recipientId):
+        if senderId != self.client_id:
+            convo_id = senderId
+        else:
+            convo_id = recipientId
+        return convo_id
 
     def publish(self, message, receiver_id):
         try:
@@ -114,9 +153,9 @@ class Client:
         return response_receiver_key
     
     def encrypt_message(self, message, receiver_id):
-        response_receiver_key = self.GetReceiverKey(receiver_id)
+        self.save_messages_to_local(self.client_id, receiver_id, message)
 
-        print(response_receiver_key)
+        response_receiver_key = self.GetReceiverKey(receiver_id)
 
         # build session
         my_session_builder = SessionBuilder(self.my_store, self.my_store, self.my_store, self.my_store, receiver_id, 1)
@@ -149,12 +188,12 @@ class Client:
         # encrypt message
         outgoing_message = my_session_cipher.encrypt(bytes(message, 'utf-8'))
         outgoging_message_serialize = outgoing_message.serialize()
-        print("Encrypt Message - Out Going Message =", outgoging_message_serialize)
+        # print("Encrypt Message - Out Going Message =", outgoging_message_serialize)
         # return encrypt message
         return outgoging_message_serialize
     
     def decrypt_message(self, message, sender_id):
-        print("Decrypt Message - In Coming Message Encrypted=", message)
+        # print("Decrypt Message - In Coming Message Encrypted=", message)
         incoming_message = PreKeyWhisperMessage(serialized=message)
         # init session to decrypt
         my_session_cipher = SessionCipher(self.my_store, self.my_store, self.my_store, self.my_store, sender_id, 1)
@@ -165,6 +204,7 @@ class Client:
         except InvalidMessageException:
             print("Decrypt Message - Unable to decrypt, because sender and recipient are the same.")
         else:
-            print("Decrypt Message - Plain Text Message =", message_plain_text)
+            # print("Decrypt Message - Plain Text Message =", message_plain_text)
+            return message_plain_text
         # return encrypt message
         return 

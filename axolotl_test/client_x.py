@@ -11,8 +11,8 @@ recipient_id = input("Enter a username to talk to: ")
 response_receiver_key = x.GetReceiverKey(recipient_id)
 
 if response_receiver_key is not None:
-    message = input("Start message to {}: \n".format(recipient_id))
-    x.publish(message, recipient_id)
+    # message = input("Start message to {}: \n".format(recipient_id))
+    # x.publish(message, recipient_id)
 
     while True:
         message = input("")
