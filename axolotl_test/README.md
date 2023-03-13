@@ -9,7 +9,7 @@ python setup.py install
 
 ## Windows
  - ```git clone https://github.com/tgalal/python-axolotl```
- - Install [mingw](https://sourceforge.net/projects/mingw/) compiler
+ - Install [MinGW](https://sourceforge.net/projects/mingw/) compiler
  - Add mingw to your PATH
  - In PYTHONPATH\Lib\distutils create a file called distutils.cfg and add these lines:
  
@@ -24,11 +24,35 @@ python setup.py install
     - Make sure you have CMake: https://cmake.org/download/
  - ```python setup.py install```
 
+# Install Dependencies
+```
+pip install -r requirements.txt
+```
 
 # Usage
-- Open cmd.exe (for windows)
-```
-python server.py
-python client_alice.py
-python client_bob.py
-```
+_Note: Use cmd for Windows or terminal for Linux_
+- Start the server
+  ```
+  # Server terminal
+  python server.py
+  ```
+- Register client key with server
+  ```
+  # Alice terminal
+  python client_x.py
+  Enter your username: alice
+
+  # Bob terminal
+  python client_x.py
+  Enter your username: Bob
+  ```
+- Select the user to talk to
+  ```
+  # Alice terminal
+  Enter a username to talk to: bob
+
+  # Bob terminal
+  Enter a username to talk to: alice
+  ```
+- Alice and Bob can now start chatting!
+
