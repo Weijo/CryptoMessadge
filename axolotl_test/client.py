@@ -14,6 +14,10 @@ from axolotl.state.signedprekeyrecord import SignedPreKeyRecord
 from axolotl.protocol.prekeywhispermessage import PreKeyWhisperMessage
 from axolotl.state.prekeybundle import PreKeyBundle
 from axolotl.sessioncipher import SessionCipher
+import base64
+import json
+from os.path import exists
+
 
 # custom
 from store.mystore import MyStore
@@ -23,7 +27,7 @@ class Client:
         self.client_id = client_id
         self.device_id = device_id
         self.stub = self.grpc_stub(host, port)
-        self.my_store = MyStore()
+        self.my_store = MyStore(self.client_id)
 
     def grpc_stub(self, host, port):
         channel = grpc.insecure_channel(host + ':' + str(port))
@@ -35,14 +39,18 @@ class Client:
         self.listen()
 
     def register_keys(self, device_id, signed_prekey_id):
+        # generate client signed pre key and store it
+        file_exists = exists(self.client_id + ".json")
+
         # generate client pre key and store it
         client_prekeys_pair = KeyHelper.generatePreKeys(1, 2)
         client_prekey_pair = client_prekeys_pair[0]
+        
         self.my_store.storePreKey(client_prekey_pair.getId(), client_prekey_pair)
 
-        # generate client signed pre key and store it
         client_signed_prekey_pair = KeyHelper.generateSignedPreKey(self.my_store.getIdentityKeyPair(), signed_prekey_id)
         client_signed_prekey_signature = client_signed_prekey_pair.getSignature()
+
         self.my_store.storeSignedPreKey(signed_prekey_id, client_signed_prekey_pair)
 
         response = self.stub.RegisterBundleKey(signalc_pb2.SignalRegisterKeysRequest(
@@ -57,7 +65,19 @@ class Client:
             signedPreKeySignature=client_signed_prekey_signature
         ))
 
-        print("Client RegisterBundleKey received: " + response.message)
+        if response.message == 'success':
+            clientkey = {
+                        "client_id":self.client_id,
+                        "registration_id":self.my_store.getLocalRegistrationId(),
+                        "device_id":device_id,
+                        "identity_key_private":base64.b64encode(self.my_store.getIdentityKeyPair().getPrivateKey().serialize()).decode('utf-8'),
+                        "identity_key_public":base64.b64encode(self.my_store.getIdentityKeyPair().getPublicKey().serialize()).decode('utf-8'),
+                        }             
+            self.SaveClientStore(clientkey)
+
+    def SaveClientStore(self, clientkey):
+        with open(self.client_id + ".json", 'w') as f:
+                json.dump(clientkey, f, ensure_ascii=False)
 
     def listen(self):
         threading.Thread(target=self.heard, daemon=True).start()
@@ -96,12 +116,15 @@ class Client:
     def encrypt_message(self, message, receiver_id):
         response_receiver_key = self.GetReceiverKey(receiver_id)
 
+        print(response_receiver_key)
+
         # build session
         my_session_builder = SessionBuilder(self.my_store, self.my_store, self.my_store, self.my_store, receiver_id, 1)
 
         # combine key for receiver
         # identity public key
         receiver_identity_key_public = IdentityKey(DjbECPublicKey(response_receiver_key.identityKeyPublic[1:]))
+
 
         # pre key
         receiver_prekey = PreKeyRecord(serialized=response_receiver_key.preKey)

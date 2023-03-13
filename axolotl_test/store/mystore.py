@@ -6,8 +6,8 @@ from .mysignedprekeystored import MySignedPreKeyStore
 
 
 class MyStore(AxolotlStore):
-    def __init__(self):
-        self.identityKeyStore = MyIdentityKeyStore()
+    def __init__(self, name):
+        self.identityKeyStore = MyIdentityKeyStore(name)
         self.preKeyStore = MyPreKeyStore()
         self.signedPreKeyStore = MySignedPreKeyStore()
         self.sessionStore = MySessionStore()
