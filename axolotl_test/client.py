@@ -1,8 +1,10 @@
+import base64
+import json
+from os.path import exists
 import threading
 import grpc
 from axolotl.invalidmessageexception import InvalidMessageException
 from axolotl.untrustedidentityexception import UntrustedIdentityException
-
 from proto import signalc_pb2
 from proto import signalc_pb2_grpc
 from axolotl.sessionbuilder import SessionBuilder
@@ -14,12 +16,6 @@ from axolotl.state.signedprekeyrecord import SignedPreKeyRecord
 from axolotl.protocol.prekeywhispermessage import PreKeyWhisperMessage
 from axolotl.state.prekeybundle import PreKeyBundle
 from axolotl.sessioncipher import SessionCipher
-import base64
-import json
-from os.path import exists
-
-
-# custom
 from store.mystore import MyStore
 
 class Client:
@@ -39,9 +35,6 @@ class Client:
         self.listen()
 
     def register_keys(self, device_id, signed_prekey_id):
-        # generate client signed pre key and store it
-        file_exists = exists(self.client_id + ".json")
-
         # generate client pre key and store it
         client_prekeys_pair = KeyHelper.generatePreKeys(1, 2)
         client_prekey_pair = client_prekeys_pair[0]
@@ -93,7 +86,7 @@ class Client:
     def save_messages_to_local(self, senderId, recipientId, message_plain_text):
         import datetime
         current_time = datetime.datetime.now()
-        
+
         convo_id = self.get_other_user_id(senderId, recipientId)
 
         message = {
