@@ -27,4 +27,7 @@ make server
 
 # Run client
 make client
+
+# Clean up json and cert files
+make clean
 ```
