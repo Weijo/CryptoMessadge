@@ -29,6 +29,7 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
         username = request.username
         message = request.message
         secS, resp = opaque.CreateRegistrationResponse(message, self.record_key)
+
         return opaque_pb2.RegistrationResponse(response=resp, context=self.seal(secS))
 
     def StoreRecord(self, request, context):
@@ -42,7 +43,6 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
 
         rec = opaque.StoreUserRecord(ctx, user_record)
         self.users[username] = rec # TODO: Change this to permanent database
-
         return opaque_pb2.FinalizeResponse(registered=True)
 
     def RequestCredentials(self, request, context):
@@ -56,7 +56,7 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
 
         ids = opaque.Ids(username, self.server_id)
         resp, _, authU = opaque.CreateCredentialResponse(user_request, user_record, ids, self.context)
-        
+
         return opaque_pb2.CredentialResponse(response=resp, context=self.seal(authU))
 
     def Authenticate(self, request, context):

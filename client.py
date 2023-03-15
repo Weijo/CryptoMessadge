@@ -4,14 +4,15 @@ from Opaque.OpaqueClient import OpaqueClient
 
 logger = logging.getLogger("Client")
 
-HOST = "127.0.0.1"
+HOST = "localhost"
 OPAQUE_PORT = 50051
 SIGNAL_PORT = 50052
+CERTIFILE_FILE = './localhost.crt'
 
 def main():
     logger.info("Poggurz")
 
-    with OpaqueClient(HOST, OPAQUE_PORT) as opaqueClient:
+    with OpaqueClient(HOST, OPAQUE_PORT, CERTIFILE_FILE) as opaqueClient:
         # Authentication
         while True:
             register = input("Choose method: \n1) Register\n2) Login\n")
@@ -30,7 +31,7 @@ def main():
                 logger.warning("Invalid type choose 1 or 2")
 
         # Chatting
-        with SignalClient(username, 12345, HOST, SIGNAL_PORT, token) as signalClient:
+        with SignalClient(username, 12345, HOST, SIGNAL_PORT, CERTIFILE_FILE, token) as signalClient:
             signalClient.subscribe()
             signalClient.register_keys(1, 1)
 

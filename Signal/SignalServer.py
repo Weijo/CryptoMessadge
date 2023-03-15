@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 CLIENT_STORE_FILEPATH = "client_store.json"
 OPAQUE_HOST = 'localhost:50051'
+CERTIFILE_FILE = './localhost.crt'
 
 def require_auth(func):
     def wrapper(self, request, context):
@@ -23,7 +24,13 @@ def require_auth(func):
             context.abort(grpc.StatusCode.UNAUTHENTICATED, 'Invalid token')
 
         # Call VerifyToken method on OpaqueAuthenticationServicer
-        channel = grpc.insecure_channel(OPAQUE_HOST)
+        if CERTIFILE_FILE != "":
+            with open(CERTIFILE_FILE, 'rb') as f:
+                creds = grpc.ssl_channel_credentials(f.read())
+            channel = grpc.secure_channel(OPAQUE_HOST, creds)
+        else:
+            channel = grpc.insecure_channel(OPAQUE_HOST)
+
         stub = opaque_pb2_grpc.OpaqueAuthenticationStub(channel)
         response = stub.VerifyToken(opaque_pb2.VerifyTokenRequest(token=token))
 

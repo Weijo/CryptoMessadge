@@ -5,20 +5,43 @@ from proto import opaque_pb2_grpc
 from proto import signalc_pb2_grpc
 from Signal.SignalServer import SignalKeyDistribution
 from Opaque.OpaqueServer import OpaqueAuthenticationServicer
+from os.path import exists
 
 logger = logging.getLogger(__name__)
 
 OPAQUE_HOST = '0.0.0.0:50051'
 SIGNAL_HOST = '0.0.0.0:50052'
 
-def serve():
+CERTIFILE_FILE = './localhost.crt'
+KEY_FILE = './localhost.key'
+
+def serve(secure):
+    if secure:
+        with open(CERTIFILE_FILE, 'rb') as f:
+            server_cert_key_chain = f.read()
+        with open(KEY_FILE, 'rb') as f:
+            server_private_key = f.read()
+
+        # Create SSL server credentials
+        credentials = grpc.ssl_server_credentials(
+            [(server_private_key, server_cert_key_chain)],
+            root_certificates=None,
+            require_client_auth=False,
+        )
+
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     
     opaque_pb2_grpc.add_OpaqueAuthenticationServicer_to_server(OpaqueAuthenticationServicer(), server)
-    server.add_insecure_port(OPAQUE_HOST)
+    if secure:
+        server.add_secure_port(OPAQUE_HOST, credentials)
+    else:
+        server.add_insecure_port(OPAQUE_HOST)
 
     signalc_pb2_grpc.add_SignalKeyDistributionServicer_to_server(SignalKeyDistribution(), server)
-    server.add_insecure_port(SIGNAL_HOST)
+    if secure:
+        server.add_secure_port(SIGNAL_HOST, credentials)
+    else:
+        server.add_insecure_port(SIGNAL_HOST)
     
     logger.info("Server has started")
     server.start()
@@ -31,5 +54,10 @@ def serve():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-    serve()
+    if not exists(CERTIFILE_FILE) and not exists(KEY_FILE):
+        print("CERTIFICATE FILE MISSING. RUN `make cert`")
+        print("Running server without SSL")
+        serve(False)
+    else:
+        serve(True)
     

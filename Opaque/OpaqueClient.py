@@ -5,11 +5,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class OpaqueClient:
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, certfile: str):
         self.host = host
         self.port = port
-        self.channel = grpc.insecure_channel(f"{self.host}:{self.port}")
+        if certfile != "":
+            with open(certfile, 'rb') as f:
+                creds = grpc.ssl_channel_credentials(f.read())
+            self.channel = grpc.secure_channel(f"{self.host}:{self.port}", creds)
+        else:
+            self.channel = grpc.insecure_channel(f"{self.host}:{self.port}")
         self.stub = opaque_pb2_grpc.OpaqueAuthenticationStub(self.channel)
         self.context = "CryptoMessadge-opaque"
         self.server_id = "server"

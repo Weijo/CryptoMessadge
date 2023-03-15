@@ -4,3 +4,10 @@ __pycache__/
 
 # noisy json >:(
 *.json
+
+# secrets
+*.pem
+*.crt
+*.key
+*.srl
+*.csr

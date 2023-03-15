@@ -22,11 +22,20 @@ from .Store.mystore import MyStore
 logger = logging.getLogger(__name__)
 
 class SignalClient:
-    def __init__(self, client_id, device_id, host, port, token):
+    def __init__(self, client_id, device_id, host, port, certfile, token):
+        self.host = host
+        self.port = port
         self.client_id = client_id
         self.device_id = device_id
         self.token = token
-        self.stub = self.grpc_stub(host, port)
+        if certfile != "":
+            with open(certfile, 'rb') as f:
+                creds = grpc.ssl_channel_credentials(f.read())
+            self.channel = grpc.secure_channel(f"{self.host}:{self.port}", creds)
+        else:
+            self.channel = grpc.insecure_channel(f"{self.host}:{self.port}")
+
+        self.stub = signalc_pb2_grpc.SignalKeyDistributionStub(self.channel)
         self.my_store = MyStore(self.client_id)
 
     def __enter__(self):
@@ -39,11 +48,6 @@ class SignalClient:
     def close(self):
         if self.channel:
             self.channel.close()
-
-
-    def grpc_stub(self, host, port):
-        self.channel = grpc.insecure_channel(host + ':' + str(port))
-        return signalc_pb2_grpc.SignalKeyDistributionStub(self.channel)
     
     def subscribe(self):
         request = signalc_pb2.SubscribeAndListenRequest(clientId=self.client_id)
@@ -73,7 +77,7 @@ class SignalClient:
             signedPreKey=client_signed_prekey_pair.serialize(),
             signedPreKeySignature=client_signed_prekey_signature,
         )
-        
+
         response = self.stub.RegisterBundleKey(request, metadata=[('token', self.token)])
 
         if response.message == 'success':
