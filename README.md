@@ -15,6 +15,6 @@ I have included a 64 bit linux shared object `libopaque.so` to the repository bu
 
 Assumming libopaque.so is in current directory:
 ```
-export LD_LIBRARY_PATH=.
+export LD_LIBRARY_PATH=$(readlink -m .)
 python3 client.py
 ```
