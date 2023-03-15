@@ -24,7 +24,7 @@ def require_auth(func):
             context.abort(grpc.StatusCode.UNAUTHENTICATED, 'Invalid token')
 
         # Call VerifyToken method on OpaqueAuthenticationServicer
-        if CERTIFILE_FILE != "":
+        if exists(CERTIFILE_FILE):
             with open(CERTIFILE_FILE, 'rb') as f:
                 creds = grpc.ssl_channel_credentials(f.read())
             channel = grpc.secure_channel(OPAQUE_HOST, creds)

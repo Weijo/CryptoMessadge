@@ -28,7 +28,7 @@ class SignalClient:
         self.client_id = client_id
         self.device_id = device_id
         self.token = token
-        if certfile != "":
+        if exists(certfile):
             with open(certfile, 'rb') as f:
                 creds = grpc.ssl_channel_credentials(f.read())
             self.channel = grpc.secure_channel(f"{self.host}:{self.port}", creds)

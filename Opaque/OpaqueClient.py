@@ -1,7 +1,8 @@
 import grpc
-from proto import opaque_pb2, opaque_pb2_grpc
 import opaque
 import logging
+from os.path import exists
+from proto import opaque_pb2, opaque_pb2_grpc
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +11,7 @@ class OpaqueClient:
     def __init__(self, host: str, port: int, certfile: str):
         self.host = host
         self.port = port
-        if certfile != "":
+        if exists(certfile):
             with open(certfile, 'rb') as f:
                 creds = grpc.ssl_channel_credentials(f.read())
             self.channel = grpc.secure_channel(f"{self.host}:{self.port}", creds)

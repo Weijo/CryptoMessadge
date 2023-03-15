@@ -45,13 +45,6 @@ def main():
             else:
                 print("The username '{}' cannot be found.".format(recipient_id))
 
-def test():
-    username = "bob"
-    password = "bob"
-    with OpaqueClient(HOST, OPAQUE_PORT) as opaqueClient:
-        registered = opaqueClient.register_user(username, password)    
-        token = opaqueClient.login(username, "bob")
-
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     main()
