@@ -1,17 +1,16 @@
 import grpc
-from concurrent import futures
-from proto import opaque_pb2, opaque_pb2_grpc
 import opaque
 import jwt
 import datetime
 import logging
+from proto import opaque_pb2, opaque_pb2_grpc
 from pysodium import crypto_secretbox, crypto_secretbox_open, randombytes
+
+logger = logging.getLogger(__name__)
+
 
 class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer):
     def __init__(self):
-        # Session keys for token verification
-        self.session_keys = {}
-
         # TODO: Create user database to permanantly store 
         self.users = {}
 
@@ -37,6 +36,8 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
         user_record = request.record
         ctx = self.unseal(request.context)
         if username in self.users:
+            context.set_code(grpc.StatusCode.ALREADY_EXISTS)
+            context.set_details("User already exists")
             return opaque_pb2.FinalizeResponse(registered=False)
 
         rec = opaque.StoreUserRecord(ctx, user_record)
@@ -50,8 +51,8 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
 
         user_record = self.users.get(username, "")
         if user_record == "":
-            context.set_code(grpc.StatusCode.ALREADY_EXISTS)
-            context.set_details("User already exists")
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details("User not found")
             return opaque.CreateCredentialResponse()
 
         ids = opaque.Ids(username, self.server_id)
@@ -87,7 +88,7 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
         try:
             payload = jwt.decode(encoded_token, self.secret_key, algorithm="HS256")
         except Exception as e:
-            logging.error(f"Verifcation error: {e}")
+            logger.error(f"Verifcation error: {e}")
             context.set_code(grpc.StatusCode.UNAUTHENTICATED)
             context.set_details("Invalid token")
             return opaque_pb2.VerifyTokenResponse(is_valid=False)
@@ -102,16 +103,3 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
     def unseal(self, data):
         nonce = data[:24]
         return crypto_secretbox_open(data[24:], nonce, self.server_key)
-
-def serve():
-    logging.info("Starting server")
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    opaque_pb2_grpc.add_OpaqueAuthenticationServicer_to_server(
-        OpaqueAuthenticationServicer(), server)
-    server.add_insecure_port('[::]:50051')
-    server.start()
-    server.wait_for_termination()
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-    serve()

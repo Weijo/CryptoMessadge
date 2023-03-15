@@ -1,57 +1,30 @@
-import socketserver
-import signal
-import opaqueServer
+import grpc
+import logging
+from concurrent import futures
+from proto import opaque_pb2_grpc
+from proto import signalc_pb2_grpc
+from Signal.SignalServer import SignalKeyDistribution
+from Opaque.OpaqueServer import OpaqueAuthenticationServicer
 
-ADDRESS = ("127.0.0.1", 8888)
+logger = logging.getLogger(__name__)
 
-signal.signal(signal.SIGINT, signal.SIG_DFL)
-signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+OPAQUE_HOST = '0.0.0.0:50051'
+SIGNAL_HOST = '0.0.0.0:50052'
 
+def serve():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    
+    opaque_pb2_grpc.add_OpaqueAuthenticationServicer_to_server(OpaqueAuthenticationServicer(), server)
+    server.add_insecure_port(OPAQUE_HOST)
 
-class MyTCPHandler(socketserver.BaseRequestHandler):
-    def handle(self):
-        # Receive data from the client
-        data = self.request.recv(1024).strip()
-
-        # Extract the request type and data from the received data
-        request_type = data[0]
-        request_data = data[1:]
-
-        # Handle the different types of requests
-        if request_type == 1:
-            # Type 1 request: register
-            opaqueHandler.handle_registration(self.request, request_data)
-
-        elif request_type == 2:
-            # Type 2 request: login
-            if opaqueHandler.handle_login(self.request, request_data):
-                # Continuously receive and process messages from client
-                while True:
-                    # Receive encrypted message from client
-                    encrypted_data = self.request.recv(1024)
-                    if not encrypted_data:
-                        # Connection closed by client, exit loop
-                        break
-
-                    data = opaqueHandler.decrypt(encrypted_data)
-                    print(f"Received data: {data}")
-                    # For now send back the data
-                    encrypted_response = opaqueHandler.encrypt(data)
-                    self.request.sendall(encrypted_response.encode())
-
-        # For now, just put the signal stuff here.
-        elif request_type == 3:
-            # Type 3 request: Signal
-            pass
-
-        else:
-            # Unknown request type: send an error message back to the client
-            response_data = b"Error: unknown request type"
-            self.request.sendall(response_data)
+    signalc_pb2_grpc.add_SignalKeyDistributionServicer_to_server(SignalKeyDistribution(), server)
+    server.add_insecure_port(SIGNAL_HOST)
+    
+    logger.info("Server has started")
+    server.start()
+    server.wait_for_termination()
 
 
-if __name__ == "__main__":
-    opaqueHandler = opaqueServer.opaqueServer()
-
-    with socketserver.ThreadingTCPServer(ADDRESS, MyTCPHandler) as server:
-        server.serve_forever()
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+    serve()

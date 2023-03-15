@@ -1,8 +1,9 @@
 import base64
 import json
-from os.path import exists
 import threading
 import grpc
+import logging
+from os.path import exists
 from axolotl.invalidmessageexception import InvalidMessageException
 from axolotl.untrustedidentityexception import UntrustedIdentityException
 from proto import signalc_pb2
@@ -16,9 +17,11 @@ from axolotl.state.signedprekeyrecord import SignedPreKeyRecord
 from axolotl.protocol.prekeywhispermessage import PreKeyWhisperMessage
 from axolotl.state.prekeybundle import PreKeyBundle
 from axolotl.sessioncipher import SessionCipher
-from store.mystore import MyStore
+from .Store.mystore import MyStore
 
-class Client:
+logger = logging.getLogger(__name__)
+
+class SignalClient:
     def __init__(self, client_id, device_id, host, port):
         self.client_id = client_id
         self.device_id = device_id

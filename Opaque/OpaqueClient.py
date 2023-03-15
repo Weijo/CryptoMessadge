@@ -3,8 +3,10 @@ from proto import opaque_pb2, opaque_pb2_grpc
 import opaque
 import logging
 
+logger = logging.getLogger(__name__)
+
 class OpaqueClient:
-    def __init__(self, host: str, port: str):
+    def __init__(self, host: str, port: int):
         self.channel = grpc.insecure_channel(f"{host}:{port}")
         self.stub = opaque_pb2_grpc.OpaqueAuthenticationStub(self.channel)
         self.context = "CryptoMessadge-opaque"
@@ -33,7 +35,15 @@ class OpaqueClient:
         # Build the finalize request
         finalize_request = opaque_pb2.FinalizeRequest(username=username, record=user_record, context=response.context)
         # Send the request to the server
-        response = self.stub.StoreRecord(finalize_request)
+        try:
+            response = self.stub.StoreRecord(finalize_request)
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.ALREADY_EXISTS:
+                logger.error(f"User: {username} already exists")
+                return False
+            else:
+                logger.error("Unexpected error: {}".format(e))
+                return False
 
         # Retrieve the response from the server
         registered = response.registered
@@ -51,7 +61,13 @@ class OpaqueClient:
         request = opaque_pb2.CredentialRequest(username=username, request=pub)
 
         # Send Credential Request to the server
-        response = self.stub.RequestCredentials(request)
+        try:
+            response = self.stub.RequestCredentials(request)
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                logger.error(f"User: {username} does not exist")
+            else:
+                logger.error("Unexpected error: {}".format(e))
 
         # Retrieve the Credential Response from the server
         resp = response.response
@@ -62,13 +78,20 @@ class OpaqueClient:
         try:
             _, authU, _ = opaque.RecoverCredentials(resp, security_context, self.context, ids)
         except ValueError:
-            logging.error("Invalid password")
+            logger.error("Invalid username or password")
             return ""
 
         # Generate Authentication request
         auth_request = opaque_pb2.AuthenticationRequest(username=username, auth=authU, context=response.context)
+    
         # Send Authentication request to the server
-        response = self.stub.Authenticate(auth_request)
+        try:
+            response = self.stub.Authenticate(auth_request)
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAUTHENTICATED:
+                logger.error(f"Invalid auth: {e.details()}")
+            else:
+                logger.error("Unexpected error: {}".format(e))
         # Retrieve Authentication response from the server
         token = response.token
         return token

@@ -1,6 +1,4 @@
-from concurrent import futures
 import logging
-import grpc
 from proto import signalc_pb2
 from proto import signalc_pb2_grpc
 from queue import Queue
@@ -8,8 +6,9 @@ import json
 import base64
 from os.path import exists
 
-CLIENT_STORE_FILEPATH = "client_store.json"
+logger = logging.getLogger(__name__)
 
+CLIENT_STORE_FILEPATH = "client_store.json"
 
 class ClientKey:
     def __init__(self, client_id, registration_id, device_id, identity_key_public, prekey_id, prekey, signed_prekey_id,
@@ -47,8 +46,8 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
                                        request.identityKeyPublic, request.preKeyId, request.preKey,
                                        request.signedPreKeyId, request.signedPreKey, request.signedPreKeySignature)
 
-        print('***** CLIENT REGISTER KEYS *****')
-        print(request)
+        logger.debug('***** CLIENT REGISTER KEYS *****')
+        logger.debug(request)
 
         self.SaveClientStore(client_combine_key)
 
@@ -72,7 +71,7 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
 
     def GetKeyBundleByUserId(self, request, context):
         client_id = request.clientId
-        print(client_id)
+        logger.debug(client_id)
         if client_id in self.GetClientStore():
             client_combine_key = self.GetClientStore()[client_id]
             response = signalc_pb2.SignalKeysUserResponse(
@@ -105,7 +104,7 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
         return signalc_pb2.BaseResponse(message='success')
 
     def Listen(self, request, context):
-        print(self.queues)
+        logger.debug(self.queues)
         if request.clientId in self.queues:
             while True:
                 publication = self.queues[request.clientId].get()  # blocking until the next .put for this queue
@@ -116,17 +115,3 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
     def Subscribe(self, request, context):
         self.queues[request.clientId] = Queue()
         return signalc_pb2.BaseResponse(message='success')
-
-
-def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    signalc_pb2_grpc.add_SignalKeyDistributionServicer_to_server(SignalKeyDistribution(), server)
-    server.add_insecure_port('0.0.0.0:50051')
-    server.start()
-    print('Server has started at port: 50051')
-    server.wait_for_termination()
-
-
-if __name__ == '__main__':
-    logging.basicConfig()
-    serve()
