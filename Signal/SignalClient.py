@@ -22,19 +22,32 @@ from .Store.mystore import MyStore
 logger = logging.getLogger(__name__)
 
 class SignalClient:
-    def __init__(self, client_id, device_id, host, port):
+    def __init__(self, client_id, device_id, host, port, token):
         self.client_id = client_id
         self.device_id = device_id
+        self.token = token
         self.stub = self.grpc_stub(host, port)
         self.my_store = MyStore(self.client_id)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.channel:
+            self.channel.close()
+    
+    def close(self):
+        if self.channel:
+            self.channel.close()
+
+
     def grpc_stub(self, host, port):
-        channel = grpc.insecure_channel(host + ':' + str(port))
-        return signalc_pb2_grpc.SignalKeyDistributionStub(channel)
+        self.channel = grpc.insecure_channel(host + ':' + str(port))
+        return signalc_pb2_grpc.SignalKeyDistributionStub(self.channel)
     
     def subscribe(self):
         request = signalc_pb2.SubscribeAndListenRequest(clientId=self.client_id)
-        response = self.stub.Subscribe(request)
+        response = self.stub.Subscribe(request, metadata=[('token', self.token)])
         self.listen()
 
     def register_keys(self, device_id, signed_prekey_id):
@@ -49,7 +62,7 @@ class SignalClient:
 
         self.my_store.storeSignedPreKey(signed_prekey_id, client_signed_prekey_pair)
 
-        response = self.stub.RegisterBundleKey(signalc_pb2.SignalRegisterKeysRequest(
+        request = signalc_pb2.SignalRegisterKeysRequest(
             clientId=self.client_id,
             registrationId=self.my_store.getLocalRegistrationId(),
             deviceId=device_id,
@@ -58,8 +71,10 @@ class SignalClient:
             preKey=client_prekey_pair.serialize(),
             signedPreKeyId=signed_prekey_id,
             signedPreKey=client_signed_prekey_pair.serialize(),
-            signedPreKeySignature=client_signed_prekey_signature
-        ))
+            signedPreKeySignature=client_signed_prekey_signature,
+        )
+        
+        response = self.stub.RegisterBundleKey(request, metadata=[('token', self.token)])
 
         if response.message == 'success':
             clientkey = {
@@ -80,7 +95,7 @@ class SignalClient:
 
     def heard(self):
         request = signalc_pb2.SubscribeAndListenRequest(clientId=self.client_id)
-        for publication in self.stub.Listen(request):  # this line will wait for new messages from the server
+        for publication in self.stub.Listen(request, metadata=[('token', self.token)]):  # this line will wait for new messages from the server
             message_plain_text = self.decrypt_message(publication.message, publication.senderId)
             print("\nFrom {}: {}".format(publication.senderId, message_plain_text.decode('utf-8')))
 
@@ -134,14 +149,14 @@ class SignalClient:
             # send message
             request = signalc_pb2.PublishRequest(receiveId=receiver_id, message=out_goging_message,
                                                  senderId=self.client_id)
-            response = self.stub.Publish(request)
+            response = self.stub.Publish(request, metadata=[('token', self.token)])
 
 
     def GetReceiverKey(self, receiver_id):
         # get sender client key first (need to store in second time)
         request_receiver_key = signalc_pb2.SignalKeysUserRequest(clientId=receiver_id)
 
-        response_receiver_key = self.stub.GetKeyBundleByUserId(request_receiver_key)
+        response_receiver_key = self.stub.GetKeyBundleByUserId(request_receiver_key, metadata=[('token', self.token)])
 
         if response_receiver_key.clientId == 'none':
             return None
@@ -204,3 +219,6 @@ class SignalClient:
             return message_plain_text
         # return encrypt message
         return 
+
+    def close(self):
+        self.channel.close()

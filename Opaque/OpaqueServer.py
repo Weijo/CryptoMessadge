@@ -4,14 +4,14 @@ import jwt
 import datetime
 import logging
 from proto import opaque_pb2, opaque_pb2_grpc
-from pysodium import crypto_secretbox, crypto_secretbox_open, randombytes
+from pysodium import crypto_secretbox, crypto_secretbox_open, randombytes, crypto_scalarmult_SCALARBYTES
 
 logger = logging.getLogger(__name__)
 
 
 class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer):
     def __init__(self):
-        # TODO: Create user database to permanantly store 
+        # TODO: Create user database to permanantly store user data
         self.users = {}
 
         # This key is only for sealing ctx and jwt token
@@ -19,7 +19,7 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
 
         # Record key
         # TODO: Figure out a way to store keys securely
-        self.record_key = ""
+        self.record_key = randombytes(crypto_scalarmult_SCALARBYTES)
 
         self.context = "CryptoMessadge-opaque"
 
@@ -28,8 +28,8 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
     def RegisterUser(self, request, context):
         username = request.username
         message = request.message
-        sec, resp = opaque.CreateRegistrationResponse(message)
-        return opaque_pb2.RegistrationResponse(response=resp, context=self.seal(sec))
+        secS, resp = opaque.CreateRegistrationResponse(message, self.record_key)
+        return opaque_pb2.RegistrationResponse(response=resp, context=self.seal(secS))
 
     def StoreRecord(self, request, context):
         username = request.username
@@ -48,7 +48,6 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
     def RequestCredentials(self, request, context):
         username = request.username
         user_request = request.request
-
         user_record = self.users.get(username, "")
         if user_record == "":
             context.set_code(grpc.StatusCode.NOT_FOUND)
@@ -86,7 +85,7 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
         encoded_token = request.token
 
         try:
-            payload = jwt.decode(encoded_token, self.secret_key, algorithm="HS256")
+            payload = jwt.decode(encoded_token, self.server_key, algorithm="HS256")
         except Exception as e:
             logger.error(f"Verifcation error: {e}")
             context.set_code(grpc.StatusCode.UNAUTHENTICATED)
