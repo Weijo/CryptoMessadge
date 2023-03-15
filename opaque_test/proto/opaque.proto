@@ -1,0 +1,66 @@
+syntax = "proto3";
+package opaque;
+
+message RegistrationRequest {
+    string username = 1;
+    bytes message = 2;
+}
+
+message RegistrationResponse {
+    bytes response = 1;
+    bytes context = 2;
+}
+
+message FinalizeRequest {
+    string username = 1;
+    bytes record = 2;
+    bytes context = 3;
+}
+
+message FinalizeResponse {
+    bool registered = 1;
+}
+
+message CredentialRequest {
+    string username = 1;
+    bytes request = 2;
+}
+
+message CredentialResponse {
+    bytes response = 1;
+    bytes context = 2;
+}
+
+message AuthenticationRequest {
+    string username = 1;
+    bytes auth = 2;
+    bytes context = 3;
+}
+
+message AuthenticationResponse {
+    string token = 1;
+}
+
+message VerifyTokenRequest {
+    string token = 1;
+    string username = 2;
+}
+
+message VerifyTokenResponse {
+    bool is_valid = 1;
+}
+
+service OpaqueAuthentication {
+    // registration 
+    rpc RegisterUser(RegistrationRequest) returns (RegistrationResponse);
+    rpc StoreRecord(FinalizeRequest) returns (FinalizeResponse);
+
+    // credential recovery
+    rpc RequestCredentials(CredentialRequest) returns (CredentialResponse);
+
+    // Authentication
+    rpc Authenticate(AuthenticationRequest) returns (AuthenticationResponse);
+
+    // token verification
+    rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
+}
