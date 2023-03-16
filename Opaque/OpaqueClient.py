@@ -53,7 +53,7 @@ class OpaqueClient:
         user_record, export_key = opaque.FinalizeRequest(secU, pub, ids)
 
         # Build the finalize request
-        finalize_request = opaque_pb2.FinalizeRequest(username=username, record=user_record, context=response.context)
+        finalize_request = opaque_pb2.FinalizeRequest(username=username, record=user_record)
         # Send the request to the server
         try:
             response = self.stub.StoreRecord(finalize_request)
@@ -93,7 +93,6 @@ class OpaqueClient:
 
         # Retrieve the Credential Response from the server
         resp = response.response
-        ctx = response.context
 
         # Recover Credentials
         # Shared key and export key not needed
@@ -104,7 +103,7 @@ class OpaqueClient:
             return ""
 
         # Generate Authentication request
-        auth_request = opaque_pb2.AuthenticationRequest(username=username, auth=authU, context=ctx)
+        auth_request = opaque_pb2.AuthenticationRequest(username=username, auth=authU)
     
         # Send Authentication request to the server
         try:

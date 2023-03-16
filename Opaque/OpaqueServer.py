@@ -4,7 +4,7 @@ import jwt
 import datetime
 import logging
 from proto import opaque_pb2, opaque_pb2_grpc
-from pysodium import crypto_secretbox, crypto_secretbox_open, randombytes, crypto_scalarmult_SCALARBYTES
+from pysodium import randombytes, crypto_scalarmult_SCALARBYTES
 
 logger = logging.getLogger(__name__)
 
@@ -14,12 +14,16 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
         # TODO: Create user database to permanantly store user data
         self.users = {}
 
-        # This key is only for sealing ctx and jwt token
+        # This key is only for generating jwt token
         self.server_key = randombytes(32)
 
         # Record key
         # TODO: Figure out a way to store keys securely
         self.record_key = randombytes(crypto_scalarmult_SCALARBYTES)
+
+        # For temporary caching of authentication tokens 
+        self.auths = {}
+        self.secs = {}
 
         self.context = "CryptoMessadge-opaque"
 
@@ -30,12 +34,18 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
         message = request.message
         secS, resp = opaque.CreateRegistrationResponse(message, self.record_key)
 
-        return opaque_pb2.RegistrationResponse(response=resp, context=self.seal(secS))
+        self.secs[username] = secS
+
+        return opaque_pb2.RegistrationResponse(response=resp)
 
     def StoreRecord(self, request, context):
         username = request.username
         user_record = request.record
-        ctx = self.unseal(request.context)
+        
+        # retrieve cached secS and remove from dictionary 
+        ctx = self.secs.get(username, "")
+        self.secs.pop(username, None)
+
         if username in self.users:
             context.set_code(grpc.StatusCode.ALREADY_EXISTS)
             context.set_details("User already exists")
@@ -57,12 +67,17 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
         ids = opaque.Ids(username, self.server_id)
         resp, _, authU = opaque.CreateCredentialResponse(user_request, user_record, ids, self.context)
 
-        return opaque_pb2.CredentialResponse(response=resp, context=self.seal(authU))
+        self.auths[username] = authU
+
+        return opaque_pb2.CredentialResponse(response=resp)
 
     def Authenticate(self, request, context):
         username = request.username
         auth = request.auth
-        auth0 = self.unseal(request.context)
+
+        # Retrieve cached auth and remove from dictionary
+        auth0 = self.auths.get(username, "")
+        self.auths.pop(username, None)
 
         try:
             opaque.UserAuth(auth, auth0)
@@ -93,12 +108,3 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
             return opaque_pb2.VerifyTokenResponse(is_valid=False)
 
         return opaque_pb2.VerifyTokenResponse(is_valid=True)
-
-    
-    def seal(self, data):
-        nonce = randombytes(24)
-        return nonce+crypto_secretbox(data, nonce, self.server_key)
-
-    def unseal(self, data):
-        nonce = data[:24]
-        return crypto_secretbox_open(data[24:], nonce, self.server_key)
