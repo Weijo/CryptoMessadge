@@ -52,7 +52,7 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
         if user_record == "":
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details("User not found")
-            return opaque.CreateCredentialResponse()
+            return opaque_pb2.CredentialResponse()
 
         ids = opaque.Ids(username, self.server_id)
         resp, _, authU = opaque.CreateCredentialResponse(user_request, user_record, ids, self.context)
