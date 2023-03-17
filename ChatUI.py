@@ -1,5 +1,4 @@
 import sys
-#from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QListWidget, QListWidgetItem
 from PyQt5.QtWidgets import *
 
 class ChatMessagingUI(QWidget):
