@@ -100,9 +100,9 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
         encoded_token = request.token
 
         try:
-            payload = jwt.decode(encoded_token, self.server_key, algorithm="HS256")
+            payload = jwt.decode(encoded_token, self.server_key, algorithms="HS256")
         except Exception as e:
-            logger.error(f"Verifcation error: {e}")
+            logger.error(f"Verification error: {e}")
             context.set_code(grpc.StatusCode.UNAUTHENTICATED)
             context.set_details("Invalid token")
             return opaque_pb2.VerifyTokenResponse(is_valid=False)
