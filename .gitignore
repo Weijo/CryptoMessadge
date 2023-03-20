@@ -12,3 +12,6 @@ __pycache__/
 *.srl
 *.csr
 *.ext
+
+# sqlite files
+*.db

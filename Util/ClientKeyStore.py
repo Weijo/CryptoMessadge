@@ -99,11 +99,10 @@ class ClientKeyStore:
         return json.dumps(json_dict)
 
 if __name__ == "__main__":
-    test_json = "../alice.json"
-    with open(test_json, 'r') as f:
-        json_string = f.read() 
-
+    
+    json_string = '{"client_id": "alice", "registration_id": 4245, "device_id": 1, "identity_key_private": "UAiMJWgnyFjJdK8R5xoR2s7EPlN7jXevcIfEWuMpYmw=", "identity_key_public": "BSxDMvoAVhfIoLQs3qit62QV132Ij9EJ7eW3UeCZvhMy"}'
     print(json_string)
+    
     clientstore = ClientKeyStore("client.db", "password")
     try:
         clientstore.store_key(json_string)
