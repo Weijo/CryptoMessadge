@@ -6,3 +6,5 @@ grpcio-tools
 protobuf==3.20.0
 python-axolotl==0.2.3
 python-axolotl-curve25519==0.4.1.post2
+PyJWT
+PyQt5
