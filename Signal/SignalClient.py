@@ -1,30 +1,36 @@
 import base64
 import json
-import threading
-import grpc
 import logging
+import threading
+
+import grpc
 from os.path import exists
-from axolotl.invalidmessageexception import InvalidMessageException
-from axolotl.untrustedidentityexception import UntrustedIdentityException
-from proto import signalc_pb2
-from proto import signalc_pb2_grpc
-from axolotl.sessionbuilder import SessionBuilder
-from axolotl.util.keyhelper import KeyHelper
+from datetime import datetime
+from axolotl.ecc.djbec import DjbECPrivateKey, DjbECPublicKey
 from axolotl.identitykey import IdentityKey
-from axolotl.ecc.djbec import DjbECPublicKey, DjbECPrivateKey
+from axolotl.invalidmessageexception import InvalidMessageException
+from axolotl.protocol.prekeywhispermessage import PreKeyWhisperMessage
+from axolotl.sessionbuilder import SessionBuilder
+from axolotl.sessioncipher import SessionCipher
+from axolotl.state.prekeybundle import PreKeyBundle
 from axolotl.state.prekeyrecord import PreKeyRecord
 from axolotl.state.signedprekeyrecord import SignedPreKeyRecord
-from axolotl.protocol.prekeywhispermessage import PreKeyWhisperMessage
-from axolotl.state.prekeybundle import PreKeyBundle
-from axolotl.sessioncipher import SessionCipher
+from axolotl.untrustedidentityexception import UntrustedIdentityException
+from axolotl.util.keyhelper import KeyHelper
+
+import Util.messageStorage
+from proto import signalc_pb2, signalc_pb2_grpc
+
 from .Store.mystore import MyStore
 
 logger = logging.getLogger(__name__)
+
 
 class SignalClient:
     def __init__(self, client_id, device_id, host, port, certfile, token):
         self.host = host
         self.port = port
+        self.msg_id = 1
         self.client_id = client_id
         self.device_id = device_id
         self.token = token
@@ -44,11 +50,11 @@ class SignalClient:
     def __exit__(self, exc_type, exc_value, traceback):
         if self.channel:
             self.channel.close()
-    
+
     def close(self):
         if self.channel:
             self.channel.close()
-    
+
     def subscribe(self):
         request = signalc_pb2.SubscribeAndListenRequest(clientId=self.client_id)
         response = self.stub.Subscribe(request, metadata=[('token', self.token)])
@@ -58,7 +64,7 @@ class SignalClient:
         # generate client pre key and store it
         client_prekeys_pair = KeyHelper.generatePreKeys(1, 2)
         client_prekey_pair = client_prekeys_pair[0]
-        
+
         self.my_store.storePreKey(client_prekey_pair.getId(), client_prekey_pair)
 
         client_signed_prekey_pair = KeyHelper.generateSignedPreKey(self.my_store.getIdentityKeyPair(), signed_prekey_id)
@@ -82,60 +88,102 @@ class SignalClient:
 
         if response.message == 'success':
             clientkey = {
-                        "client_id":self.client_id,
-                        "registration_id":self.my_store.getLocalRegistrationId(),
-                        "device_id":device_id,
-                        "identity_key_private":base64.b64encode(self.my_store.getIdentityKeyPair().getPrivateKey().serialize()).decode('utf-8'),
-                        "identity_key_public":base64.b64encode(self.my_store.getIdentityKeyPair().getPublicKey().serialize()).decode('utf-8'),
-                        }             
+                "client_id": self.client_id,
+                "registration_id": self.my_store.getLocalRegistrationId(),
+                "device_id": device_id,
+                "identity_key_private": base64.b64encode(
+                    self.my_store.getIdentityKeyPair().getPrivateKey().serialize()).decode('utf-8'),
+                "identity_key_public": base64.b64encode(
+                    self.my_store.getIdentityKeyPair().getPublicKey().serialize()).decode('utf-8'),
+            }
             self.SaveClientStore(clientkey)
 
     def SaveClientStore(self, clientkey):
         with open(self.client_id + ".json", 'w') as f:
-                json.dump(clientkey, f, ensure_ascii=False)
+            json.dump(clientkey, f, ensure_ascii=False)
 
     def listen(self):
         threading.Thread(target=self.heard, daemon=True).start()
 
     def heard(self):
         request = signalc_pb2.SubscribeAndListenRequest(clientId=self.client_id)
-        for publication in self.stub.Listen(request, metadata=[('token', self.token)]):  # this line will wait for new messages from the server
+        for publication in self.stub.Listen(request, metadata=[
+            ('token', self.token)]):  # this line will wait for new messages from the server
             message_plain_text = self.decrypt_message(publication.message, publication.senderId)
-            print("\nFrom {}: {}".format(publication.senderId, message_plain_text.decode('utf-8')))
+
+            try:
+                print("\nFrom {}: {}".format(publication.senderId, message_plain_text.decode('utf-8')))
+            except AttributeError as e:
+                print(e)
 
             self.save_messages_to_local(publication.senderId, self.client_id, message_plain_text.decode('utf-8'))
 
             yield message_plain_text.decode('utf-8')
 
     def save_messages_to_local(self, senderId, recipientId, message_plain_text):
-        import datetime
-        current_time = datetime.datetime.now()
+
+        current_datetime = datetime.now()
+        DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
         convo_id = self.get_other_user_id(senderId, recipientId)
 
-        message = {
-                    "senderId": senderId,
-                    "recipientId": recipientId, 
-                    "date":current_time.strftime("%x"), 
-                    "time": current_time.strftime("%X"),
-                    "message":message_plain_text
-                }
+        # Define password and salt
+        password = b"password"
+        salt = b"salt"
 
-        FILE_PATH = self.client_id + "_messages.json"
-        file_exists = exists(FILE_PATH)
-        if file_exists:
-            with open(FILE_PATH) as json_file:
-                messages = json.load(json_file)
-            
-            if convo_id not in messages:
-                messages[convo_id] = {}
-        else:
-            messages = {convo_id: {}}
-        
-        messages[convo_id][current_time.strftime("%x %X")] = message
-        
-        with open(FILE_PATH, 'w') as f:
-            json.dump(messages, f, ensure_ascii=False)
+        # Derive the encryption key and create an instance of the Fernet class
+        key = Util.messageStorage.get_encryption_key(password, salt)
+        cipher_suite = Util.messageStorage.create_cipher_suite(key)
+
+        encrypted_message_for_storage = Util.messageStorage.encrypt_body(cipher_suite, message_plain_text).decode(
+            'utf-8')
+
+        # connect to database.
+        conn = Util.messageStorage.connect_to_database()
+
+        # If already got entry in database, get the latest messageId, and increase that number by 1.
+        if not Util.messageStorage.database_empty(conn):
+            self.msg_id = Util.messageStorage.get_latest_message_id(conn) + 1
+
+        # Insert data into the table
+        messages = [
+            (self.msg_id, senderId, recipientId, encrypted_message_for_storage, current_datetime),
+        ]
+
+        Util.messageStorage.insert_messages(conn, messages)
+
+        # Retrieve the data from the table and print it in a table format
+        Util.messageStorage.print_messages(conn)
+
+        # Close the database connection
+        Util.messageStorage.close_database(conn)
+
+
+        # message = {
+        #     "messageId": self.msg_id,
+        #     "sender": senderId,
+        #     "recipient": recipientId,
+        #     "encrypted_message": encrypted_message_for_storage,
+        #     "datetime": current_datetime.strftime(DATETIME_FORMAT),
+        # }
+        #
+        # FILE_PATH = self.client_id + "_messages.json"
+        # file_exists = exists(FILE_PATH)
+        # if file_exists:
+        #     with open(FILE_PATH) as json_file:
+        #         messages = json.load(json_file)
+        #
+        #     if convo_id not in messages:
+        #         messages[convo_id] = {}
+        # else:
+        #     messages = {convo_id: {}}
+        #
+        # messages[convo_id][current_datetime.strftime(DATETIME_FORMAT)] = message
+        #
+        # with open(FILE_PATH, 'w') as f:
+        #     json.dump(messages, f, ensure_ascii=False)
+
+
 
     def get_other_user_id(self, senderId, recipientId):
         if senderId != self.client_id:
@@ -149,14 +197,14 @@ class SignalClient:
             # encrypt message first
             out_goging_message = self.encrypt_message(message, receiver_id)
         except UntrustedIdentityException:
-            print("publish - Unable to encrypt message to be sent, because a new session started on the recipient side.")
+            print(
+                "publish - Unable to encrypt message to be sent, because a new session started on the recipient side.")
 
         else:
             # send message
             request = signalc_pb2.PublishRequest(receiveId=receiver_id, message=out_goging_message,
                                                  senderId=self.client_id)
             response = self.stub.Publish(request, metadata=[('token', self.token)])
-
 
     def GetReceiverKey(self, receiver_id):
         # get sender client key first (need to store in second time)
@@ -168,7 +216,7 @@ class SignalClient:
             return None
 
         return response_receiver_key
-    
+
     def encrypt_message(self, message, receiver_id):
         self.save_messages_to_local(self.client_id, receiver_id, message)
 
@@ -180,7 +228,6 @@ class SignalClient:
         # combine key for receiver
         # identity public key
         receiver_identity_key_public = IdentityKey(DjbECPublicKey(response_receiver_key.identityKeyPublic[1:]))
-
 
         # pre key
         receiver_prekey = PreKeyRecord(serialized=response_receiver_key.preKey)
@@ -197,7 +244,7 @@ class SignalClient:
                                               receiver_signed_prekey_pair.getKeyPair().getPublicKey(),
                                               response_receiver_key.signedPreKeySignature,
                                               receiver_identity_key_public)
-        
+
         # process session and create session cipher
         my_session_builder.processPreKeyBundle(receiver_prekey_bundle)
         my_session_cipher = SessionCipher(self.my_store, self.my_store, self.my_store, self.my_store, receiver_id, 1)
@@ -208,7 +255,7 @@ class SignalClient:
         # print("Encrypt Message - Out Going Message =", outgoging_message_serialize)
         # return encrypt message
         return outgoging_message_serialize
-    
+
     def decrypt_message(self, message, sender_id):
         # print("Decrypt Message - In Coming Message Encrypted=", message)
         incoming_message = PreKeyWhisperMessage(serialized=message)
@@ -224,7 +271,7 @@ class SignalClient:
             # print("Decrypt Message - Plain Text Message =", message_plain_text)
             return message_plain_text
         # return encrypt message
-        return 
+        return
 
     def close(self):
         self.channel.close()

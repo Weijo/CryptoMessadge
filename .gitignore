@@ -15,3 +15,6 @@ __pycache__/
 
 # sqlite files
 *.db
+
+# pycharm stuff
+.idea/*
