@@ -105,6 +105,8 @@ class SignalClient:
 
             self.save_messages_to_local(publication.senderId, self.client_id, message_plain_text.decode('utf-8'))
 
+            yield message_plain_text.decode('utf-8')
+
     def save_messages_to_local(self, senderId, recipientId, message_plain_text):
         import datetime
         current_time = datetime.datetime.now()
