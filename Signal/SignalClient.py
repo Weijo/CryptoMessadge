@@ -218,7 +218,6 @@ class SignalClient:
         return response_receiver_key
 
     def encrypt_message(self, message, receiver_id):
-        self.save_messages_to_local(self.client_id, receiver_id, message)
 
         response_receiver_key = self.GetReceiverKey(receiver_id)
 

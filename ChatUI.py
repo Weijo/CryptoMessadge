@@ -61,6 +61,12 @@ class ChatMessagingUI(QWidget):
         self.message_listener_thread.started.connect(self.message_listener.run)
         self.message_listener_thread.start()
 
+        # populate data
+        # Replace TESINT with populated data from database
+        item = QListWidgetItem("TESINT")
+        self.history_list.addItem(item)
+        self.message_input.clear()
+
     def send_message(self):
         message = self.message_input.text()
 
