@@ -147,7 +147,7 @@ class SignalClient:
 
         # Insert data into the table
         messages = [
-            (self.msg_id, senderId, recipientId, encrypted_message_for_storage, current_datetime),
+            (self.msg_id, senderId, recipientId, message_plain_text, current_datetime),
         ]
 
         Util.messageStorage.insert_messages(conn, messages)
