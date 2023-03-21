@@ -6,6 +6,7 @@ from proto import signalc_pb2_grpc
 from Signal.SignalServer import SignalKeyDistribution
 from Opaque.OpaqueServer import OpaqueAuthenticationServicer
 from os.path import exists
+from Util.RecordDB import RecordDB
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ SIGNAL_HOST = '0.0.0.0:50052'
 
 CERTIFILE_FILE = './localhost.crt'
 KEY_FILE = './localhost.key'
+DB_FILE = 'server.db'
 
 def serve(secure):
     if secure:
@@ -31,7 +33,9 @@ def serve(secure):
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     
-    opaque_pb2_grpc.add_OpaqueAuthenticationServicer_to_server(OpaqueAuthenticationServicer(), server)
+    recordDB = RecordDB(DB_FILE)
+
+    opaque_pb2_grpc.add_OpaqueAuthenticationServicer_to_server(OpaqueAuthenticationServicer(recordDB), server)
     if secure:
         server.add_secure_port(OPAQUE_HOST, credentials)
     else:

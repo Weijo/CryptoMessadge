@@ -36,7 +36,10 @@ clear_cert:
 clear_json:
 	rm -f *.json
 
-clean: clear_cert clear_json
+clear_db:
+	rm -f *.db
+
+clean: clear_cert clear_json clear_db
 
 test:
 	python3 test.py

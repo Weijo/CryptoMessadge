@@ -5,21 +5,19 @@ import datetime
 import logging
 from proto import opaque_pb2, opaque_pb2_grpc
 from pysodium import randombytes, crypto_scalarmult_SCALARBYTES
+from Util.RecordDB import RecordDB
 
 logger = logging.getLogger(__name__)
 
 
 class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer):
-    def __init__(self):
-        # TODO: Create user database to permanantly store user data
-        self.users = {}
-
+    def __init__(self, db):
         # This key is only for generating jwt token
         self.server_key = randombytes(32)
 
-        # Record key
-        # TODO: Figure out a way to store keys securely
+        # Records
         self.record_key = randombytes(crypto_scalarmult_SCALARBYTES)
+        self.db = db
 
         # For temporary caching of authentication tokens 
         self.auths = {}
@@ -45,21 +43,21 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
         # retrieve cached secS and remove from dictionary 
         ctx = self.secs.get(username, "")
         self.secs.pop(username, None)
-
-        if username in self.users:
+        if ( self.db.retrieve_record(username) != b""):
             context.set_code(grpc.StatusCode.ALREADY_EXISTS)
             context.set_details("User already exists")
             return opaque_pb2.FinalizeResponse(registered=False)
 
         rec = opaque.StoreUserRecord(ctx, user_record)
-        self.users[username] = rec # TODO: Change this to permanent database
+
+        self.db.store_record(username, rec)
         return opaque_pb2.FinalizeResponse(registered=True)
 
     def RequestCredentials(self, request, context):
         username = request.username
         user_request = request.request
-        user_record = self.users.get(username, "")
-        if user_record == "":
+        user_record = self.db.retrieve_record(username)
+        if user_record == b"":
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details("User not found")
             return opaque_pb2.CredentialResponse()
