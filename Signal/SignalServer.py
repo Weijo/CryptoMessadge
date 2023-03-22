@@ -7,6 +7,7 @@ from proto import signalc_pb2_grpc
 from proto import opaque_pb2
 from proto import opaque_pb2_grpc
 from queue import Queue
+from Util.ServerStore.sqlite.liteaxolotstore import LiteAxolotlStore
 from os.path import exists
 
 logger = logging.getLogger(__name__)
@@ -43,14 +44,13 @@ def require_auth(func):
     return wrapper
 
 class ClientKey:
-    def __init__(self, client_id, registration_id, device_id, identity_key_public, prekey_id, prekey, signed_prekey_id,
+    def __init__(self, client_id, registration_id, device_id, identity_key_public, prekeys, signed_prekey_id,
                  signed_prekey, signed_prekey_signature):
         self.client_id = client_id
         self.registration_id = registration_id
         self.device_id = device_id
         self.identity_key_public = identity_key_public
-        self.prekey_id = prekey_id
-        self.prekey = prekey
+        self.prekeys = prekeys
         self.signed_prekey_id = signed_prekey_id
         self.signed_prekey = signed_prekey
         self.signed_prekey_signature = signed_prekey_signature
@@ -61,8 +61,6 @@ class ClientKey:
             "registration_id": self.registration_id,
             "device_id": self.device_id,
             "identity_key_public": base64.b64encode(self.identity_key_public).decode('utf-8'),
-            "prekey_id": self.prekey_id,
-            "prekey": base64.b64encode(self.prekey).decode('utf-8'),
             "signed_prekey_id": self.signed_prekey_id,
             "signed_prekey": base64.b64encode(self.signed_prekey).decode('utf-8'),
             "signed_prekey_signature": base64.b64encode(self.signed_prekey_signature).decode('utf-8')
@@ -72,6 +70,7 @@ class ClientKey:
 class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
     def __init__(self):
         self.queues = {}
+        self.my_store = LiteAxolotlStore("ServerStore.db")
 
     def GetClientStore(self):
         data = {}
@@ -92,13 +91,17 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
     @require_auth
     def RegisterBundleKey(self, request, context):
         client_combine_key = ClientKey(request.clientId, request.registrationId, request.deviceId,
-                                       request.identityKeyPublic, request.preKeyId, request.preKey,
+                                       request.identityKeyPublic, request.preKeys,
                                        request.signedPreKeyId, request.signedPreKey, request.signedPreKeySignature)
 
         logger.debug('***** CLIENT REGISTER KEYS *****')
         logger.debug(request)
 
         self.SaveClientStore(client_combine_key)
+
+        self.my_store.storeClientIdentityKey(client_combine_key.device_id, client_combine_key.client_id, client_combine_key.registration_id, client_combine_key.identity_key_public)
+        self.my_store.storeClientPreKeys(client_combine_key.registration_id, client_combine_key.prekeys)
+        self.my_store.storeClientSignedPreKey(client_combine_key.registration_id, client_combine_key.signed_prekey_id, client_combine_key.signed_prekey)
 
         return signalc_pb2.BaseResponse(message='success')
 

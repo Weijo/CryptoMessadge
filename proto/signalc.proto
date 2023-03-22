@@ -12,13 +12,18 @@ message SignalRegisterKeysRequest {
 
     bytes identityKeyPublic = 4;
 
-    int32 preKeyId = 5;
-    bytes preKey = 6;
+    repeated PreKeyRecord preKeys = 5;
 
-    int32 signedPreKeyId = 7;
-    bytes signedPreKey = 8;
+    int32 signedPreKeyId = 6;
+    bytes signedPreKey = 7;
 
-    bytes signedPreKeySignature = 9;
+    bytes signedPreKeySignature = 8;
+}
+
+message PreKeyRecord {
+    int32 id = 1;
+    bytes publicKey = 2;
+    bytes privateKey = 3;
 }
 
 message SignalKeysUserRequest {

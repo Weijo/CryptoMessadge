@@ -17,17 +17,19 @@ from axolotl.state.prekeyrecord import PreKeyRecord
 from axolotl.state.signedprekeyrecord import SignedPreKeyRecord
 from axolotl.untrustedidentityexception import UntrustedIdentityException
 from axolotl.util.keyhelper import KeyHelper
+from Util.ClientStore.sqlite.liteaxolotstore import LiteAxolotlStore
+from Signal.AxolotlManager import AxolotlManager
 
 import Util.messageStorage
 from proto import signalc_pb2, signalc_pb2_grpc
 
-from .Store.mystore import MyStore
+from Util.ClientStore.mystore import MyStore
 
 logger = logging.getLogger(__name__)
 
 
 class SignalClient:
-    def __init__(self, client_id, device_id, host, port, certfile, token):
+    def __init__(self, client_id, device_id, host, port, certfile, token, dbpath):
         self.host = host
         self.port = port
         self.msg_id = 1
@@ -42,7 +44,8 @@ class SignalClient:
             self.channel = grpc.insecure_channel(f"{self.host}:{self.port}")
 
         self.stub = signalc_pb2_grpc.SignalKeyDistributionStub(self.channel)
-        self.my_store = MyStore(self.client_id)
+        self.my_store = LiteAxolotlStore(dbpath)
+        self.manager = AxolotlManager(self.my_store, self.client_id)
 
     def __enter__(self):
         return self
@@ -61,42 +64,33 @@ class SignalClient:
         self.listen()
 
     def register_keys(self, device_id, signed_prekey_id):
-        # generate client pre key and store it
-        client_prekeys_pair = KeyHelper.generatePreKeys(1, 2)
-        client_prekey_pair = client_prekeys_pair[0]
+        self.manager.level_prekeys()
+        signedprekey  = self.manager.load_latest_signed_prekey(generate=True)
 
-        self.my_store.storePreKey(client_prekey_pair.getId(), client_prekey_pair)
-
-        client_signed_prekey_pair = KeyHelper.generateSignedPreKey(self.my_store.getIdentityKeyPair(), signed_prekey_id)
-        client_signed_prekey_signature = client_signed_prekey_pair.getSignature()
-
-        self.my_store.storeSignedPreKey(signed_prekey_id, client_signed_prekey_pair)
+        prekeys = []
+        for prekey in self.my_store.loadUnsentPendingPreKeys():
+            prekey = signalc_pb2.PreKeyRecord(
+                id=prekey.getId(),
+                publicKey=prekey.getKeyPair().getPublicKey().serialize(),
+                privateKey=prekey.getKeyPair().getPrivateKey().serialize(),
+            )
+            prekeys.append(prekey)
 
         request = signalc_pb2.SignalRegisterKeysRequest(
             clientId=self.client_id,
             registrationId=self.my_store.getLocalRegistrationId(),
             deviceId=device_id,
             identityKeyPublic=self.my_store.getIdentityKeyPair().getPublicKey().serialize(),
-            preKeyId=client_prekey_pair.getId(),
-            preKey=client_prekey_pair.serialize(),
+            preKeys=prekeys,
             signedPreKeyId=signed_prekey_id,
-            signedPreKey=client_signed_prekey_pair.serialize(),
-            signedPreKeySignature=client_signed_prekey_signature,
+            signedPreKey=signedprekey.getKeyPair().getPublicKey().serialize(),
+            signedPreKeySignature=signedprekey.getSignature(),
         )
 
         response = self.stub.RegisterBundleKey(request, metadata=[('token', self.token)])
 
         if response.message == 'success':
-            clientkey = {
-                "client_id": self.client_id,
-                "registration_id": self.my_store.getLocalRegistrationId(),
-                "device_id": device_id,
-                "identity_key_private": base64.b64encode(
-                    self.my_store.getIdentityKeyPair().getPrivateKey().serialize()).decode('utf-8'),
-                "identity_key_public": base64.b64encode(
-                    self.my_store.getIdentityKeyPair().getPublicKey().serialize()).decode('utf-8'),
-            }
-            self.SaveClientStore(clientkey)
+            self.my_store.setPrekeyAsSent([1,2,3,4,5,6,7,8,9,10])
 
     def SaveClientStore(self, clientkey):
         with open(self.client_id + ".json", 'w') as f:
