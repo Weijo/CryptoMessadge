@@ -107,8 +107,6 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
 
     @require_auth
     def GetKeyBundleByUserId(self, request, context):
-        print(request.isEncrypting)
-
         client_id = request.clientId
         logger.debug(client_id)
 
@@ -158,38 +156,8 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
 
         return response
 
-        # client_id = request.clientId
-        # logger.debug(client_id)
-        # if client_id in self.GetClientStore():
-        #     client_combine_key = self.GetClientStore()[client_id]
-        #     response = signalc_pb2.SignalKeysUserResponse(
-        #         clientId=client_id,
-        #         registrationId=client_combine_key['registration_id'],
-        #         deviceId=client_combine_key['device_id'],
-        #         identityKeyPublic=base64.b64decode(client_combine_key['identity_key_public']),
-        #         preKeyId=client_combine_key['prekey_id'],
-        #         preKey=base64.b64decode(client_combine_key['prekey']),
-        #         signedPreKeyId=client_combine_key['signed_prekey_id'],
-        #         signedPreKey=base64.b64decode(client_combine_key['signed_prekey']),
-        #         signedPreKeySignature=base64.b64decode(client_combine_key['signed_prekey_signature'])
-        #     )
-        # else:
-        #     response = signalc_pb2.SignalKeysUserResponse(
-        #         clientId='none',
-        #         registrationId=0,
-        #         deviceId=0,
-        #         identityKeyPublic=str.encode("none"),
-        #         preKeyId=0,
-        #         preKey=str.encode("none"),
-        #         signedPreKeyId=0,
-        #         signedPreKey=str.encode("none"),
-        #         signedPreKeySignature=str.encode("none")
-        #     )
-        # return response
-
     @require_auth
     def Publish(self, request, context):
-        print(self.queues)
         self.queues[request.receiveId].put(request)
         return signalc_pb2.BaseResponse(message='success')
 

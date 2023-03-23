@@ -23,8 +23,6 @@ from Signal.AxolotlManager import AxolotlManager
 import Util.messageStorage
 from proto import signalc_pb2, signalc_pb2_grpc
 
-from Util.ClientStore.mystore import MyStore
-
 logger = logging.getLogger(__name__)
 
 

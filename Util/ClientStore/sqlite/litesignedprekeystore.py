@@ -13,9 +13,6 @@ class LiteSignedPreKeyStore(SignedPreKeyStore):
 
 
     def loadSignedPreKey(self, signedPreKeyId):
-        print("STARTTT")
-        print(signedPreKeyId)
-        print("ENDDDD")
         q = "SELECT record FROM signed_prekeys WHERE prekey_id = ?"
 
         cursor = self.dbConn.cursor()
