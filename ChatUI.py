@@ -3,7 +3,11 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import QTimer
 import json
 from os.path import exists
+import Util.messageStorage
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
+
+from Signal.SignalClient import SignalClient
+
 
 class MessageListener(QObject):
     message_received = pyqtSignal(str)
@@ -62,9 +66,39 @@ class ChatMessagingUI(QWidget):
         self.message_listener_thread.start()
 
         # populate data
-        # Replace TESINT with populated data from database
-        item = QListWidgetItem("TESINT")
-        self.history_list.addItem(item)
+        # Define password and salt
+        password = b"1ct2205?!"
+        salt = b"verysaltytears"
+
+        # Derive the decryption key and create an instance of the Fernet class
+        key = Util.messageStorage.get_encryption_key(password, salt)
+        cipher_suite = Util.messageStorage.create_cipher_suite(key)
+
+        # connect to database.
+        conn = Util.messageStorage.connect_to_database()
+        cursor = conn.execute("SELECT sender, recipient, encrypted_message FROM messages WHERE convo_id=? OR convo_id=?",
+                              (self.username + "-" + self.recipient_id, self.recipient_id + "-" + self.username,))
+
+        all_relevant_entries = cursor.fetchall()
+        print("all_relevant_entries: ", all_relevant_entries)
+
+        for relevant_entry in all_relevant_entries:
+            sender = relevant_entry[0]
+            recipient = relevant_entry[1]
+            encrypted_message = relevant_entry[2]
+
+            decrypted_message = Util.messageStorage.decrypt_body(cipher_suite, encrypted_message).decode()
+
+            if sender == self.recipient_id:
+                item = QListWidgetItem(recipient + ": " + decrypted_message)
+            elif sender == self.username:
+                item = QListWidgetItem("You: " + decrypted_message)
+
+            self.history_list.addItem(item)
+
+        # Close the database connection
+        Util.messageStorage.close_database(conn)
+
         self.message_input.clear()
 
     def send_message(self):

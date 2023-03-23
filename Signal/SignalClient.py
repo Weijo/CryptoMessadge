@@ -125,11 +125,12 @@ class SignalClient:
         current_datetime = datetime.now()
         DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-        convo_id = self.get_other_user_id(senderId, recipientId)
+        # convo_id = self.get_other_user_id(senderId, recipientId)
+        convo_id = senderId + "-" + recipientId
 
         # Define password and salt
-        password = b"password"
-        salt = b"salt"
+        password = b"1ct2205?!"
+        salt = b"verysaltytears"
 
         # Derive the encryption key and create an instance of the Fernet class
         key = Util.messageStorage.get_encryption_key(password, salt)
@@ -147,7 +148,7 @@ class SignalClient:
 
         # Insert data into the table
         messages = [
-            (self.msg_id, senderId, recipientId, message_plain_text, current_datetime),
+            (self.msg_id, convo_id, senderId, recipientId, encrypted_message_for_storage, current_datetime),
         ]
 
         Util.messageStorage.insert_messages(conn, messages)
@@ -157,33 +158,6 @@ class SignalClient:
 
         # Close the database connection
         Util.messageStorage.close_database(conn)
-
-
-        # message = {
-        #     "messageId": self.msg_id,
-        #     "sender": senderId,
-        #     "recipient": recipientId,
-        #     "encrypted_message": encrypted_message_for_storage,
-        #     "datetime": current_datetime.strftime(DATETIME_FORMAT),
-        # }
-        #
-        # FILE_PATH = self.client_id + "_messages.json"
-        # file_exists = exists(FILE_PATH)
-        # if file_exists:
-        #     with open(FILE_PATH) as json_file:
-        #         messages = json.load(json_file)
-        #
-        #     if convo_id not in messages:
-        #         messages[convo_id] = {}
-        # else:
-        #     messages = {convo_id: {}}
-        #
-        # messages[convo_id][current_datetime.strftime(DATETIME_FORMAT)] = message
-        #
-        # with open(FILE_PATH, 'w') as f:
-        #     json.dump(messages, f, ensure_ascii=False)
-
-
 
     def get_other_user_id(self, senderId, recipientId):
         if senderId != self.client_id:
