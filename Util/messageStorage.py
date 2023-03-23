@@ -36,6 +36,7 @@ def connect_to_database():
     conn = sqlite3.connect('messageStorage.db')
     conn.execute('''CREATE TABLE IF NOT EXISTS messages
                  (messageId INT PRIMARY KEY NOT NULL,
+                 convo_id TEXT NOT NULL,
                  sender TEXT NOT NULL,
                  recipient TEXT NOT NULL,
                  encrypted_message TEXT NOT NULL,
@@ -49,13 +50,18 @@ def encrypt_body(cipher_suite, body):
     return encrypted_body
 
 
+def decrypt_body(cipher_suite, body):
+    decrypted_body = cipher_suite.decrypt(body.encode())
+    return decrypted_body
+
+
 # Insert data into the table
 def insert_messages(conn, messages):
-    insert_sql = '''INSERT INTO messages (messageId, sender, recipient, encrypted_message, datetime)
-                    VALUES (?, ?, ?, ?, ?)'''
+    insert_sql = '''INSERT INTO messages (messageId, convo_id, sender, recipient, encrypted_message, datetime)
+                    VALUES (?, ?, ?, ?, ?, ?)'''
     for message in messages:
-        datetime_str = message[4].strftime(DATETIME_FORMAT)
-        conn.execute(insert_sql, (message[0], message[1], message[2], message[3], datetime_str))
+        datetime_str = message[5].strftime(DATETIME_FORMAT)
+        conn.execute(insert_sql, (message[0], message[1], message[2], message[3], message[4], datetime_str))
     conn.commit()
 
 
@@ -63,9 +69,9 @@ def insert_messages(conn, messages):
 def print_messages(conn):
     cursor = conn.execute("SELECT * FROM messages")
     for row in cursor:
-        encrypted_message = row[3]
-        datetime_str = datetime.strptime(row[4], DATETIME_FORMAT).strftime(DATETIME_FORMAT)
-        print('{0:<10} {1:<10} {2:<10} {3:<20} {4:<20}'.format(row[0], row[1], row[2], encrypted_message, datetime_str))
+        encrypted_message = row[4]
+        datetime_str = datetime.strptime(row[5], DATETIME_FORMAT).strftime(DATETIME_FORMAT)
+        print('{0:<10} {1:<10} {2:<10} {3:<20} {4:<20} {5:<20}'.format(row[0], row[1], row[2], row[3], encrypted_message, datetime_str))
 
 
 def get_latest_message_id(conn):
@@ -86,36 +92,3 @@ def database_empty(conn):
 # Close the database connection
 def close_database(conn):
     conn.close()
-
-# Define the main function
-# def main():
-#     # Define password and salt
-#     password = b"password"
-#     salt = b"salt"
-#
-#     # Derive the encryption key and create an instance of the Fernet class
-#     key = get_encryption_key(password, salt)
-#     cipher_suite = create_cipher_suite(key)
-#
-#     # Create a database connection and table
-#     conn = connect_to_database()
-#
-#     # Insert data into the table
-#     messages = [
-#         (1, 'Alice', encrypt_body(cipher_suite, 'Hello'), datetime.now()),
-#         (2, 'Bob', encrypt_body(cipher_suite, 'How are you?'), datetime.now()),
-#         (3, 'Charlie', encrypt_body(cipher_suite, 'Nice to meet you'), datetime.now()),
-#         (4, 'Dave', encrypt_body(cipher_suite, 'Goodbye'), datetime.now()),
-#     ]
-#     insert_messages(conn, messages)
-#
-#     # Retrieve the data from the table and print it in a table format
-#     print_messages(conn)
-#
-#     # Close the database connection
-#     close_database(conn)
-
-
-# Call the main function
-# if __name__ == '__main__':
-#     main()
