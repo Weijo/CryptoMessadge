@@ -90,7 +90,7 @@ class ChatMessagingUI(QWidget):
             decrypted_message = Util.messageStorage.decrypt_body(cipher_suite, encrypted_message).decode()
 
             if sender == self.recipient_id:
-                item = QListWidgetItem(recipient + ": " + decrypted_message)
+                item = QListWidgetItem(self.recipient_id + ": " + decrypted_message)
             elif sender == self.username:
                 item = QListWidgetItem("You: " + decrypted_message)
 
