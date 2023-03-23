@@ -77,6 +77,9 @@ class LiteAxolotlStore(AxolotlStore):
 
     def loadSignedPreKeys(self):
         return self.signedPreKeyStore.loadSignedPreKeys()
+    
+    def loadLatestSignedPreKey(self):
+        return self.signedPreKeyStore.loadLatestSignedPreKey()
 
     def storeSignedPreKey(self, signedPreKeyId, signedPreKeyRecord):
         self.signedPreKeyStore.storeSignedPreKey(signedPreKeyId, signedPreKeyRecord)

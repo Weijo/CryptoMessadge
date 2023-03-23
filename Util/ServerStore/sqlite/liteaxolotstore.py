@@ -31,5 +31,25 @@ class LiteAxolotlStore(AxolotlStore):
         for prekey in prekeys:
             self.storeClientPreKey(registrationId, prekey.id, prekey.publicKey)
 
-    def storeClientSignedPreKey(self, registration_id, signedPreKeyId, signedPreKeyRecord):
-        self.signedPreKeyStore.storeSignedPreKey(registration_id, signedPreKeyId, signedPreKeyRecord)
+    def storeClientSignedPreKey(self, registration_id, signedPreKeyId, signedPreKeyRecord, signed_prekey_signature):
+        self.signedPreKeyStore.storeSignedPreKey(registration_id, signedPreKeyId, signedPreKeyRecord, signed_prekey_signature)
+
+
+    
+    def getClientRegistrationId(self, recipient_id):
+        return self.identityKeyStore.getRegistrationId(recipient_id)
+    
+    def getClientDeviceId(self, recipient_id):
+        return self.identityKeyStore.getDeviceId(recipient_id)
+
+    def getClientIdentityKey(self, recipient_id):
+        return self.identityKeyStore.getIdentityKey(recipient_id)
+    
+    def getClientPreKey(self, registration_id):
+        return self.preKeyStore.getPreKey(registration_id)
+    
+    def getClientSignedPreKey(self, registration_id):
+        return self.signedPreKeyStore.getSignedPreKey(registration_id)
+    
+    def removeClientPreKey(self, registration_id, preKeyId):
+        self.preKeyStore.removePreKey(registration_id, preKeyId)

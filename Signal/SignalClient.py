@@ -68,13 +68,14 @@ class SignalClient:
         signedprekey  = self.manager.load_latest_signed_prekey(generate=True)
 
         prekeys = []
-        for prekey in self.my_store.loadUnsentPendingPreKeys():
+        my_list = []
+        for prekey_detail in self.my_store.loadUnsentPendingPreKeys():
             prekey = signalc_pb2.PreKeyRecord(
-                id=prekey.getId(),
-                publicKey=prekey.getKeyPair().getPublicKey().serialize(),
-                privateKey=prekey.getKeyPair().getPrivateKey().serialize(),
+                id=prekey_detail.getId(),
+                publicKey=prekey_detail.getKeyPair().getPublicKey().serialize(),
             )
             prekeys.append(prekey)
+            my_list.append(prekey_detail.getId())
 
         request = signalc_pb2.SignalRegisterKeysRequest(
             clientId=self.client_id,
@@ -82,7 +83,7 @@ class SignalClient:
             deviceId=device_id,
             identityKeyPublic=self.my_store.getIdentityKeyPair().getPublicKey().serialize(),
             preKeys=prekeys,
-            signedPreKeyId=signed_prekey_id,
+            signedPreKeyId=signedprekey.getId(),
             signedPreKey=signedprekey.getKeyPair().getPublicKey().serialize(),
             signedPreKeySignature=signedprekey.getSignature(),
         )
@@ -90,7 +91,7 @@ class SignalClient:
         response = self.stub.RegisterBundleKey(request, metadata=[('token', self.token)])
 
         if response.message == 'success':
-            self.my_store.setPrekeyAsSent([1,2,3,4,5,6,7,8,9,10])
+            self.my_store.setPrekeyAsSent(my_list)   # hardcoded, to change
 
     def SaveClientStore(self, clientkey):
         with open(self.client_id + ".json", 'w') as f:
@@ -101,8 +102,7 @@ class SignalClient:
 
     def heard(self):
         request = signalc_pb2.SubscribeAndListenRequest(clientId=self.client_id)
-        for publication in self.stub.Listen(request, metadata=[
-            ('token', self.token)]):  # this line will wait for new messages from the server
+        for publication in self.stub.Listen(request, metadata=[('token', self.token)]):  # this line will wait for new messages from the server
             message_plain_text = self.decrypt_message(publication.message, publication.senderId)
 
             try:
@@ -152,7 +152,6 @@ class SignalClient:
         # Close the database connection
         Util.messageStorage.close_database(conn)
 
-
         # message = {
         #     "messageId": self.msg_id,
         #     "sender": senderId,
@@ -177,8 +176,6 @@ class SignalClient:
         # with open(FILE_PATH, 'w') as f:
         #     json.dump(messages, f, ensure_ascii=False)
 
-
-
     def get_other_user_id(self, senderId, recipientId):
         if senderId != self.client_id:
             convo_id = senderId
@@ -191,8 +188,7 @@ class SignalClient:
             # encrypt message first
             out_goging_message = self.encrypt_message(message, receiver_id)
         except UntrustedIdentityException:
-            print(
-                "publish - Unable to encrypt message to be sent, because a new session started on the recipient side.")
+            print("publish - Unable to encrypt message to be sent, because a new session started on the recipient side.")
 
         else:
             # send message
@@ -200,20 +196,19 @@ class SignalClient:
                                                  senderId=self.client_id)
             response = self.stub.Publish(request, metadata=[('token', self.token)])
 
-    def GetReceiverKey(self, receiver_id):
+    def GetReceiverKey(self, receiver_id, isEncrypting):
         # get sender client key first (need to store in second time)
-        request_receiver_key = signalc_pb2.SignalKeysUserRequest(clientId=receiver_id)
+        request_receiver_key = signalc_pb2.SignalKeysUserRequest(clientId=receiver_id, isEncrypting=isEncrypting)
 
         response_receiver_key = self.stub.GetKeyBundleByUserId(request_receiver_key, metadata=[('token', self.token)])
 
         if response_receiver_key.clientId == 'none':
             return None
-
         return response_receiver_key
 
     def encrypt_message(self, message, receiver_id):
 
-        response_receiver_key = self.GetReceiverKey(receiver_id)
+        response_receiver_key = self.GetReceiverKey(receiver_id, True)
 
         # build session
         my_session_builder = SessionBuilder(self.my_store, self.my_store, self.my_store, self.my_store, receiver_id, 1)
@@ -223,18 +218,20 @@ class SignalClient:
         receiver_identity_key_public = IdentityKey(DjbECPublicKey(response_receiver_key.identityKeyPublic[1:]))
 
         # pre key
-        receiver_prekey = PreKeyRecord(serialized=response_receiver_key.preKey)
+        # receiver_prekey = PreKeyRecord(serialized=response_receiver_key.preKey)
+        receiver_prekey = DjbECPublicKey(response_receiver_key.preKey.publicKey[1:])
 
         # signed prekey
-        receiver_signed_prekey_pair = SignedPreKeyRecord(serialized=response_receiver_key.signedPreKey)
+        # receiver_signed_prekey_pair = SignedPreKeyRecord(serialized=response_receiver_key.signedPreKey)
+        receiver_signed_prekey_pair = DjbECPublicKey(response_receiver_key.signedPreKey[1:])
 
         # combine prekey bundle
         receiver_prekey_bundle = PreKeyBundle(response_receiver_key.registrationId,
                                               response_receiver_key.deviceId,
-                                              response_receiver_key.preKeyId,
-                                              receiver_prekey.getKeyPair().getPublicKey(),
+                                              response_receiver_key.preKey.id,
+                                              receiver_prekey,
                                               response_receiver_key.signedPreKeyId,
-                                              receiver_signed_prekey_pair.getKeyPair().getPublicKey(),
+                                              receiver_signed_prekey_pair,
                                               response_receiver_key.signedPreKeySignature,
                                               receiver_identity_key_public)
 

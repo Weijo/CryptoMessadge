@@ -9,10 +9,13 @@ class LiteSignedPreKeyStore(SignedPreKeyStore):
         """
         self.dbConn = dbConn
         dbConn.execute("CREATE TABLE IF NOT EXISTS signed_prekeys (_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                       "prekey_id INTEGER UNIQUE, timestamp INTEGER, record BLOB);")
+                       "prekey_id INTEGER UNIQUE, record BLOB, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP);")
 
 
     def loadSignedPreKey(self, signedPreKeyId):
+        print("STARTTT")
+        print(signedPreKeyId)
+        print("ENDDDD")
         q = "SELECT record FROM signed_prekeys WHERE prekey_id = ?"
 
         cursor = self.dbConn.cursor()
@@ -35,6 +38,16 @@ class LiteSignedPreKeyStore(SignedPreKeyStore):
             results.append(SignedPreKeyRecord(serialized=row[0]))
 
         return results
+    
+    def loadLatestSignedPreKey(self):
+        q = "SELECT record FROM signed_prekeys ORDER BY timestamp DESC"
+
+        cursor = self.dbConn.cursor()
+        cursor.execute(q,)
+
+        result = cursor.fetchone()
+
+        return SignedPreKeyRecord(serialized=result[0])
 
     def storeSignedPreKey(self, signedPreKeyId, signedPreKeyRecord):
         #q = "DELETE FROM signed_prekeys WHERE prekey_id = ?"

@@ -15,7 +15,7 @@ class LiteIdentityKeyStore(IdentityKeyStore):
         dbConn.execute("CREATE TABLE IF NOT EXISTS identities (_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                        "recipient_id INTEGER UNIQUE,"
                        "registration_id INTEGER, public_key BLOB, private_key BLOB,"
-                       "next_prekey_id INTEGER, timestamp INTEGER);")
+                       "next_prekey_id INTEGER, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP);")
 
         if self.getLocalRegistrationId() is None or self.getIdentityKeyPair() is None:
             identity = KeyHelper.generateIdentityKeyPair()

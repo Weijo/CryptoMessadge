@@ -34,12 +34,12 @@ def main():
                 logger.warning("Invalid type choose 1 or 2")
 
         # Chatting
-        with SignalClient(username, 12345, HOST, SIGNAL_PORT, CERTIFILE_FILE, token) as signalClient:
+        with SignalClient(username, 12345, HOST, SIGNAL_PORT, CERTIFILE_FILE, token, username+"_Store.db") as signalClient:
             signalClient.subscribe()
             signalClient.register_keys(1, 1)
 
             recipient_id = input("Enter a username to talk to: ")
-            response_receiver_key = signalClient.GetReceiverKey(recipient_id)
+            response_receiver_key = signalClient.GetReceiverKey(recipient_id, False)
 
             if response_receiver_key is not None:
                 while True:

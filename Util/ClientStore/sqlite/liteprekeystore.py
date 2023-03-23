@@ -13,6 +13,8 @@ class LitePreKeyStore(PreKeyStore):
                        "prekey_id INTEGER UNIQUE, sent_to_server BOOLEAN, record BLOB);")
 
     def loadPreKey(self, preKeyId):
+
+        print(preKeyId)
         q = "SELECT record FROM prekeys WHERE prekey_id = ?"
 
         cursor = self.dbConn.cursor()

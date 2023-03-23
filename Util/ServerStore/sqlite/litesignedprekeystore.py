@@ -11,50 +11,23 @@ class LiteSignedPreKeyStore(SignedPreKeyStore):
         """
         self.dbConn = dbConn
         dbConn.execute("CREATE TABLE IF NOT EXISTS signed_prekeys (_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                       "registration_id INTEGER, prekey_id INTEGER UNIQUE, timestamp INTEGER, record BLOB);")
+                       "registration_id INTEGER, prekey_id INTEGER, timestamp INTEGER, record BLOB, signature BLOB, UNIQUE(registration_id, prekey_id) ON CONFLICT IGNORE);")
 
-
-    def loadSignedPreKey(self, signedPreKeyId):
-        q = "SELECT record FROM signed_prekeys WHERE prekey_id = ?"
-
-        cursor = self.dbConn.cursor()
-        cursor.execute(q, (signedPreKeyId,))
-
-        result = cursor.fetchone()
-        if not result:
-            raise InvalidKeyIdException("No such signedprekeyrecord! %s " % signedPreKeyId)
-
-        return SignedPreKeyRecord(serialized=result[0])
-
-    def loadSignedPreKeys(self):
-        q = "SELECT record FROM signed_prekeys"
-
-        cursor = self.dbConn.cursor()
-        cursor.execute(q,)
-        result = cursor.fetchall()
-        results = []
-        for row in result:
-            results.append(SignedPreKeyRecord(serialized=row[0]))
-
-        return results
-
-    def storeSignedPreKey(self, registration_id, signedPreKeyId, signedPreKeyRecord):
-        q = "INSERT OR IGNORE INTO signed_prekeys (registration_id, prekey_id, record) VALUES(?,?,?)"
+    def storeSignedPreKey(self, registration_id, signedPreKeyId, signedPreKeyRecord, signed_prekey_signature):
+        q = "INSERT OR IGNORE INTO signed_prekeys (registration_id, prekey_id, record, signature) VALUES(?,?,?,?)"
         cursor = self.dbConn.cursor()
 
         record = DjbECPublicKey(signedPreKeyRecord[1:]).serialize()
 
-        cursor.execute(q, (registration_id, signedPreKeyId, record))
+        cursor.execute(q, (registration_id, signedPreKeyId, record, signed_prekey_signature))
         self.dbConn.commit()
 
-    def containsSignedPreKey(self, signedPreKeyId):
-        q = "SELECT record FROM signed_prekeys WHERE prekey_id = ?"
-        cursor = self.dbConn.cursor()
-        cursor.execute(q, (signedPreKeyId,))
-        return cursor.fetchone() is not None
+    def getSignedPreKey(self, registration_id):
+        q = "SELECT prekey_id, record, signature from signed_prekeys WHERE registration_id = ? ORDER BY prekey_id DESC"
 
-    def removeSignedPreKey(self, signedPreKeyId):
-        q = "DELETE FROM signed_prekeys WHERE prekey_id = ?"
         cursor = self.dbConn.cursor()
-        cursor.execute(q, (signedPreKeyId,))
-        self.dbConn.commit()
+        cursor.execute(q, (registration_id,))
+
+        result = cursor.fetchone()
+
+        return result if result else None

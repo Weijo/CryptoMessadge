@@ -101,43 +101,95 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
 
         self.my_store.storeClientIdentityKey(client_combine_key.device_id, client_combine_key.client_id, client_combine_key.registration_id, client_combine_key.identity_key_public)
         self.my_store.storeClientPreKeys(client_combine_key.registration_id, client_combine_key.prekeys)
-        self.my_store.storeClientSignedPreKey(client_combine_key.registration_id, client_combine_key.signed_prekey_id, client_combine_key.signed_prekey)
+        self.my_store.storeClientSignedPreKey(client_combine_key.registration_id, client_combine_key.signed_prekey_id, client_combine_key.signed_prekey, client_combine_key.signed_prekey_signature)
 
         return signalc_pb2.BaseResponse(message='success')
 
     @require_auth
     def GetKeyBundleByUserId(self, request, context):
+        print(request.isEncrypting)
+
         client_id = request.clientId
         logger.debug(client_id)
-        if client_id in self.GetClientStore():
-            client_combine_key = self.GetClientStore()[client_id]
+
+        registration_id = self.my_store.getClientRegistrationId(client_id)
+        
+        if registration_id is not None:
+            device_id = self.my_store.getClientDeviceId(client_id)
+            identity_key = self.my_store.getClientIdentityKey(client_id)
+            prekey_tuple = self.my_store.getClientPreKey(registration_id)
+            signed_prekey = self.my_store.getClientSignedPreKey(registration_id)
+
+            prekey = signalc_pb2.PreKeyRecord(
+                    id=prekey_tuple[0],
+                    publicKey=prekey_tuple[1],
+                )
+
             response = signalc_pb2.SignalKeysUserResponse(
                 clientId=client_id,
-                registrationId=client_combine_key['registration_id'],
-                deviceId=client_combine_key['device_id'],
-                identityKeyPublic=base64.b64decode(client_combine_key['identity_key_public']),
-                preKeyId=client_combine_key['prekey_id'],
-                preKey=base64.b64decode(client_combine_key['prekey']),
-                signedPreKeyId=client_combine_key['signed_prekey_id'],
-                signedPreKey=base64.b64decode(client_combine_key['signed_prekey']),
-                signedPreKeySignature=base64.b64decode(client_combine_key['signed_prekey_signature'])
+                registrationId=registration_id,
+                deviceId=device_id,
+                identityKeyPublic=identity_key,
+                preKey=prekey,
+                signedPreKeyId=signed_prekey[0],
+                signedPreKey=signed_prekey[1],
+                signedPreKeySignature=signed_prekey[2]
             )
         else:
+            prekey = signalc_pb2.PreKeyRecord(
+                    id=0,
+                    publicKey=str.encode("none"),
+                )
+
             response = signalc_pb2.SignalKeysUserResponse(
                 clientId='none',
                 registrationId=0,
                 deviceId=0,
                 identityKeyPublic=str.encode("none"),
-                preKeyId=0,
-                preKey=str.encode("none"),
+                preKey=prekey,
                 signedPreKeyId=0,
                 signedPreKey=str.encode("none"),
                 signedPreKeySignature=str.encode("none")
             )
+
+        if request.isEncrypting:
+            if response.preKey.id != 0 and response.registrationId != 0:
+                self.my_store.removeClientPreKey(response.registrationId, response.preKey.id)
+
         return response
+
+        # client_id = request.clientId
+        # logger.debug(client_id)
+        # if client_id in self.GetClientStore():
+        #     client_combine_key = self.GetClientStore()[client_id]
+        #     response = signalc_pb2.SignalKeysUserResponse(
+        #         clientId=client_id,
+        #         registrationId=client_combine_key['registration_id'],
+        #         deviceId=client_combine_key['device_id'],
+        #         identityKeyPublic=base64.b64decode(client_combine_key['identity_key_public']),
+        #         preKeyId=client_combine_key['prekey_id'],
+        #         preKey=base64.b64decode(client_combine_key['prekey']),
+        #         signedPreKeyId=client_combine_key['signed_prekey_id'],
+        #         signedPreKey=base64.b64decode(client_combine_key['signed_prekey']),
+        #         signedPreKeySignature=base64.b64decode(client_combine_key['signed_prekey_signature'])
+        #     )
+        # else:
+        #     response = signalc_pb2.SignalKeysUserResponse(
+        #         clientId='none',
+        #         registrationId=0,
+        #         deviceId=0,
+        #         identityKeyPublic=str.encode("none"),
+        #         preKeyId=0,
+        #         preKey=str.encode("none"),
+        #         signedPreKeyId=0,
+        #         signedPreKey=str.encode("none"),
+        #         signedPreKeySignature=str.encode("none")
+        #     )
+        # return response
 
     @require_auth
     def Publish(self, request, context):
+        print(self.queues)
         self.queues[request.receiveId].put(request)
         return signalc_pb2.BaseResponse(message='success')
 

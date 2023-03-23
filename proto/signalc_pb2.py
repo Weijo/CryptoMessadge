@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13proto/signalc.proto\x12\x07signalc\"\x1f\n\x0c\x42\x61seResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\"\x89\x02\n\x19SignalRegisterKeysRequest\x12\x10\n\x08\x63lientId\x18\x01 \x01(\t\x12\x16\n\x0eregistrationId\x18\x02 \x01(\x05\x12\x10\n\x08\x64\x65viceId\x18\x03 \x01(\x05\x12\x19\n\x11identityKeyPublic\x18\x04 \x01(\x0c\x12&\n\x07preKeys\x18\x05 \x03(\x0b\x32\x15.signalc.PreKeyRecord\x12\x10\n\x08preKeyId\x18\x06 \x01(\x05\x12\x0e\n\x06preKey\x18\x07 \x01(\x0c\x12\x16\n\x0esignedPreKeyId\x18\x08 \x01(\x05\x12\x14\n\x0csignedPreKey\x18\t \x01(\x0c\x12\x1d\n\x15signedPreKeySignature\x18\n \x01(\x0c\"A\n\x0cPreKeyRecord\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x11\n\tpublicKey\x18\x02 \x01(\x0c\x12\x12\n\nprivateKey\x18\x03 \x01(\x0c\")\n\x15SignalKeysUserRequest\x12\x10\n\x08\x63lientId\x18\x01 \x01(\t\"\xde\x01\n\x16SignalKeysUserResponse\x12\x10\n\x08\x63lientId\x18\x01 \x01(\t\x12\x16\n\x0eregistrationId\x18\x02 \x01(\x05\x12\x10\n\x08\x64\x65viceId\x18\x03 \x01(\x05\x12\x19\n\x11identityKeyPublic\x18\x04 \x01(\x0c\x12\x10\n\x08preKeyId\x18\x05 \x01(\x05\x12\x0e\n\x06preKey\x18\x06 \x01(\x0c\x12\x16\n\x0esignedPreKeyId\x18\x07 \x01(\x05\x12\x14\n\x0csignedPreKey\x18\x08 \x01(\x0c\x12\x1d\n\x15signedPreKeySignature\x18\t \x01(\x0c\"F\n\x0ePublishRequest\x12\x10\n\x08senderId\x18\x01 \x01(\t\x12\x11\n\treceiveId\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x01(\x0c\"-\n\x19SubscribeAndListenRequest\x12\x10\n\x08\x63lientId\x18\x01 \x01(\t\"0\n\x0bPublication\x12\x10\n\x08senderId\x18\x01 \x01(\t\x12\x0f\n\x07message\x18\x02 \x01(\x0c\x32\x89\x03\n\x15SignalKeyDistribution\x12N\n\x11RegisterBundleKey\x12\".signalc.SignalRegisterKeysRequest\x1a\x15.signalc.BaseResponse\x12W\n\x14GetKeyBundleByUserId\x12\x1e.signalc.SignalKeysUserRequest\x1a\x1f.signalc.SignalKeysUserResponse\x12\x46\n\tSubscribe\x12\".signalc.SubscribeAndListenRequest\x1a\x15.signalc.BaseResponse\x12\x44\n\x06Listen\x12\".signalc.SubscribeAndListenRequest\x1a\x14.signalc.Publication0\x01\x12\x39\n\x07Publish\x12\x17.signalc.PublishRequest\x1a\x15.signalc.BaseResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13proto/signalc.proto\x12\x07signalc\"\x1f\n\x0c\x42\x61seResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\"\xe7\x01\n\x19SignalRegisterKeysRequest\x12\x10\n\x08\x63lientId\x18\x01 \x01(\t\x12\x16\n\x0eregistrationId\x18\x02 \x01(\x05\x12\x10\n\x08\x64\x65viceId\x18\x03 \x01(\x05\x12\x19\n\x11identityKeyPublic\x18\x04 \x01(\x0c\x12&\n\x07preKeys\x18\x05 \x03(\x0b\x32\x15.signalc.PreKeyRecord\x12\x16\n\x0esignedPreKeyId\x18\x06 \x01(\x05\x12\x14\n\x0csignedPreKey\x18\x07 \x01(\x0c\x12\x1d\n\x15signedPreKeySignature\x18\x08 \x01(\x0c\"-\n\x0cPreKeyRecord\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x11\n\tpublicKey\x18\x02 \x01(\x0c\"?\n\x15SignalKeysUserRequest\x12\x10\n\x08\x63lientId\x18\x01 \x01(\t\x12\x14\n\x0cisEncrypting\x18\x02 \x01(\x08\"\xe3\x01\n\x16SignalKeysUserResponse\x12\x10\n\x08\x63lientId\x18\x01 \x01(\t\x12\x16\n\x0eregistrationId\x18\x02 \x01(\x05\x12\x10\n\x08\x64\x65viceId\x18\x03 \x01(\x05\x12\x19\n\x11identityKeyPublic\x18\x04 \x01(\x0c\x12%\n\x06preKey\x18\x05 \x01(\x0b\x32\x15.signalc.PreKeyRecord\x12\x16\n\x0esignedPreKeyId\x18\x06 \x01(\x05\x12\x14\n\x0csignedPreKey\x18\x07 \x01(\x0c\x12\x1d\n\x15signedPreKeySignature\x18\x08 \x01(\x0c\"F\n\x0ePublishRequest\x12\x10\n\x08senderId\x18\x01 \x01(\t\x12\x11\n\treceiveId\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x01(\x0c\"-\n\x19SubscribeAndListenRequest\x12\x10\n\x08\x63lientId\x18\x01 \x01(\t\"0\n\x0bPublication\x12\x10\n\x08senderId\x18\x01 \x01(\t\x12\x0f\n\x07message\x18\x02 \x01(\x0c\x32\x89\x03\n\x15SignalKeyDistribution\x12N\n\x11RegisterBundleKey\x12\".signalc.SignalRegisterKeysRequest\x1a\x15.signalc.BaseResponse\x12W\n\x14GetKeyBundleByUserId\x12\x1e.signalc.SignalKeysUserRequest\x1a\x1f.signalc.SignalKeysUserResponse\x12\x46\n\tSubscribe\x12\".signalc.SubscribeAndListenRequest\x1a\x15.signalc.BaseResponse\x12\x44\n\x06Listen\x12\".signalc.SubscribeAndListenRequest\x1a\x14.signalc.Publication0\x01\x12\x39\n\x07Publish\x12\x17.signalc.PublishRequest\x1a\x15.signalc.BaseResponseb\x06proto3')
 
 
 
@@ -89,19 +89,19 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _BASERESPONSE._serialized_start=32
   _BASERESPONSE._serialized_end=63
   _SIGNALREGISTERKEYSREQUEST._serialized_start=66
-  _SIGNALREGISTERKEYSREQUEST._serialized_end=331
-  _PREKEYRECORD._serialized_start=333
-  _PREKEYRECORD._serialized_end=398
-  _SIGNALKEYSUSERREQUEST._serialized_start=400
-  _SIGNALKEYSUSERREQUEST._serialized_end=441
-  _SIGNALKEYSUSERRESPONSE._serialized_start=444
-  _SIGNALKEYSUSERRESPONSE._serialized_end=666
-  _PUBLISHREQUEST._serialized_start=668
-  _PUBLISHREQUEST._serialized_end=738
-  _SUBSCRIBEANDLISTENREQUEST._serialized_start=740
-  _SUBSCRIBEANDLISTENREQUEST._serialized_end=785
-  _PUBLICATION._serialized_start=787
-  _PUBLICATION._serialized_end=835
-  _SIGNALKEYDISTRIBUTION._serialized_start=838
-  _SIGNALKEYDISTRIBUTION._serialized_end=1231
+  _SIGNALREGISTERKEYSREQUEST._serialized_end=297
+  _PREKEYRECORD._serialized_start=299
+  _PREKEYRECORD._serialized_end=344
+  _SIGNALKEYSUSERREQUEST._serialized_start=346
+  _SIGNALKEYSUSERREQUEST._serialized_end=409
+  _SIGNALKEYSUSERRESPONSE._serialized_start=412
+  _SIGNALKEYSUSERRESPONSE._serialized_end=639
+  _PUBLISHREQUEST._serialized_start=641
+  _PUBLISHREQUEST._serialized_end=711
+  _SUBSCRIBEANDLISTENREQUEST._serialized_start=713
+  _SUBSCRIBEANDLISTENREQUEST._serialized_end=758
+  _PUBLICATION._serialized_start=760
+  _PUBLICATION._serialized_end=808
+  _SIGNALKEYDISTRIBUTION._serialized_start=811
+  _SIGNALKEYDISTRIBUTION._serialized_end=1204
 # @@protoc_insertion_point(module_scope)
