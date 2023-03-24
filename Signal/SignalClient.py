@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class SignalClient:
-    def __init__(self, client_id, device_id, host, port, certfile, token, dbpath):
+    def __init__(self, device_id, host, port, certfile, dbpath, client_id="", token=""):
         self.host = host
         self.port = port
         self.msg_id = 1
@@ -108,7 +108,7 @@ class SignalClient:
             except AttributeError as e:
                 print(e)
 
-            self.save_messages_to_local(publication.senderId, self.client_id, message_plain_text.decode('utf-8'))
+            #self.save_messages_to_local(publication.senderId, self.client_id, message_plain_text.decode('utf-8'))
 
             yield message_plain_text.decode('utf-8')
 
