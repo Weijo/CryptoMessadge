@@ -140,7 +140,7 @@ class SignalClient:
             'utf-8')
 
         # connect to database.
-        conn = Util.messageStorage.connect_to_database()
+        conn = Util.messageStorage.connect_to_database(senderId)
 
         # If already got entry in database, get the latest messageId, and increase that number by 1.
         if not Util.messageStorage.database_empty(conn):

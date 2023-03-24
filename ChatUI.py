@@ -75,7 +75,7 @@ class ChatMessagingUI(QWidget):
         cipher_suite = Util.messageStorage.create_cipher_suite(key)
 
         # connect to database.
-        conn = Util.messageStorage.connect_to_database()
+        conn = Util.messageStorage.connect_to_database(self.username)
         cursor = conn.execute("SELECT sender, recipient, encrypted_message FROM messages WHERE convo_id=? OR convo_id=?",
                               (self.username + "-" + self.recipient_id, self.recipient_id + "-" + self.username,))
 
