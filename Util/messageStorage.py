@@ -32,8 +32,8 @@ def create_cipher_suite(key):
 #     return conn
 
 # connect to database (create table if doesn't exist)
-def connect_to_database():
-    conn = sqlite3.connect('messageStorage.db')
+def connect_to_database(username):
+    conn = sqlite3.connect(username + '_messageStorage.db')
     conn.execute('''CREATE TABLE IF NOT EXISTS messages
                  (messageId INT PRIMARY KEY NOT NULL,
                  convo_id TEXT NOT NULL,
