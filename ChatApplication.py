@@ -1,16 +1,29 @@
+import sys
+import logging
+import random
+from Signal.SignalClient import SignalClient
+from Opaque.OpaqueClient import OpaqueClient
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import pyqtSignal
-import sys
+
+logger = logging.getLogger("Client")
+
+HOST = "localhost"
+OPAQUE_PORT = 50051
+SIGNAL_PORT = 50052
+CERTIFILE_FILE = './localhost.crt'
 
 class ChatApplication(QApplication):
     def __init__(self, argv):
         super().__init__(argv)
-        self.login_widget = LoginWidget()
-        self.search_ui = ChatSearchUI()
 
+        self.opaqueClient = OpaqueClient(HOST, OPAQUE_PORT, CERTIFILE_FILE)
+        self.signalClient = SignalClient(12345, HOST, SIGNAL_PORT, CERTIFILE_FILE)
+        self.login_widget = LoginWidget(self.opaqueClient, self.signalClient)
+        self.search_ui = ChatSearchUI(self.opaqueClient, self.signalClient)
+    
         # connect login signal to slot that changes widget displayed
         self.login_widget.login_signal.connect(self.show_search_ui)
-
         self.login_widget.show()
 
     def show_search_ui(self):
@@ -20,9 +33,11 @@ class ChatApplication(QApplication):
 class LoginWidget(QWidget):
     login_signal = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, opaqueClient, signalClient):
         super().__init__()
         self.initUI()
+        self.opaqueClient = opaqueClient
+        self.signalClient = signalClient
 
     def initUI(self):
         self.setWindowTitle('Chat Messager')
@@ -90,7 +105,11 @@ class LoginWidget(QWidget):
             self.popupDialog("Error", "Please enter the Username and Password.", QMessageBox.Warning)
             return
 
-        if username == "alice" and password == "alice":
+        token = self.opaqueClient.login(username, password)
+        if token != "":
+            logger.info("Loggged in")
+            self.signalClient.token = token
+            self.signalClient.client_id = username
             self.login_signal.emit() # emit the login signal
         else:
             self.popupDialog("Error", "Invalid username or password.", QMessageBox.Warning)
@@ -102,12 +121,14 @@ class LoginWidget(QWidget):
         if username == "" or password == "":
             self.popupDialog("Error", "Please enter the Username and Password.", QMessageBox.Warning)
             return
-        else:
+
+        registered = self.opaqueClient.register_user(username, password)
+        if registered:
+            logger.info("Successfully registered")
             self.popupDialog("Success", "User registered successfully!", QMessageBox.Information)
+        else:
+            self.popupDialog("Failure", "User already exists", QMessageBox.Information)
         
-
-
-
     def popupDialog(self, title, text, messageType):
         error_dialog = QMessageBox()
         error_dialog.setIcon(messageType)
@@ -117,9 +138,11 @@ class LoginWidget(QWidget):
         error_dialog.exec_()
 
 class ChatSearchUI(QWidget):
-    def __init__(self):
+    def __init__(self, opaqueClient, signalClient):
         super().__init__()
         self.initUI()
+        self.opaqueClient = opaqueClient
+        self.signalClient = signalClient
 
     def initUI(self):
         self.setWindowTitle('Chat Messager')
@@ -158,5 +181,6 @@ class ChatSearchUI(QWidget):
             self.message_input.clear()
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     app = ChatApplication(sys.argv)
     sys.exit(app.exec_())

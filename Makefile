@@ -43,3 +43,6 @@ clean: clear_cert clear_json clear_db
 
 test:
 	python3 test.py
+
+ui:
+	python3 ChatApplication.py

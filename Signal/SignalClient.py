@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class SignalClient:
-    def __init__(self, client_id, device_id, host, port, certfile, token):
+    def __init__(self, device_id, host, port, certfile, client_id="", token=""):
         self.host = host
         self.port = port
         self.msg_id = 1
