@@ -35,7 +35,11 @@ def main():
 
 
         # Chatting
-        with SignalClient(12345, HOST, SIGNAL_PORT, CERTIFILE_FILE, username+"_Store.db", username, token) as signalClient:
+        with SignalClient(12345, HOST, SIGNAL_PORT, CERTIFILE_FILE) as signalClient:
+            signalClient.client_id = username
+            signalClient.token = token
+            signalClient.dbpath = username+"_Store.db"
+            
             signalClient.subscribe()
             signalClient.register_keys(1, 1)
 

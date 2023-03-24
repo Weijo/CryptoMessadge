@@ -27,13 +27,15 @@ logger = logging.getLogger(__name__)
 
 
 class SignalClient:
-    def __init__(self, device_id, host, port, certfile, dbpath, client_id="", token=""):
+    def __init__(self, device_id, host, port, certfile, client_id="", token="", dbpath=""):
         self.host = host
         self.port = port
         self.msg_id = 1
         self.client_id = client_id
         self.device_id = device_id
         self.token = token
+        self.dbpath = dbpath
+        
         if exists(certfile):
             with open(certfile, 'rb') as f:
                 creds = grpc.ssl_channel_credentials(f.read())
@@ -42,8 +44,6 @@ class SignalClient:
             self.channel = grpc.insecure_channel(f"{self.host}:{self.port}")
 
         self.stub = signalc_pb2_grpc.SignalKeyDistributionStub(self.channel)
-        self.my_store = LiteAxolotlStore(dbpath)
-        self.manager = AxolotlManager(self.my_store, self.client_id)
 
     def __enter__(self):
         return self
@@ -57,6 +57,9 @@ class SignalClient:
             self.channel.close()
 
     def subscribe(self):
+        self.my_store = LiteAxolotlStore(self.dbpath)
+        self.manager = AxolotlManager(self.my_store, self.client_id)
+
         request = signalc_pb2.SubscribeAndListenRequest(clientId=self.client_id)
         response = self.stub.Subscribe(request, metadata=[('token', self.token)])
         self.listen()
