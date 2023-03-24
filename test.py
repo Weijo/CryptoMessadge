@@ -33,8 +33,9 @@ def main():
             else:
                 logger.warning("Invalid type choose 1 or 2")
 
+
         # Chatting
-        with SignalClient(username, 12345, HOST, SIGNAL_PORT, CERTIFILE_FILE, token) as signalClient:
+        with SignalClient(12345, HOST, SIGNAL_PORT, CERTIFILE_FILE, username, token) as signalClient:
             signalClient.subscribe()
             signalClient.register_keys(1, 1)
 
