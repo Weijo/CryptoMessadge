@@ -116,7 +116,7 @@ class SignalClient:
             except AttributeError as e:
                 print(e)
 
-            self.save_messages_to_local(publication.senderId, self.client_id, message_plain_text.decode('utf-8'))
+            #self.save_messages_to_local(publication.senderId, self.client_id, message_plain_text.decode('utf-8'))
 
             yield message_plain_text.decode('utf-8')
 

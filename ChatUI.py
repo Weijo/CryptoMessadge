@@ -105,6 +105,7 @@ class ChatMessagingUI(QWidget):
         message = self.message_input.text()
 
         self.signalClient.publish(message, self.recipient_id)
+        self.signalClient.save_messages_to_local(self.username, self.recipient_id, message)
 
         if message:
             item = QListWidgetItem("You: " + message)
