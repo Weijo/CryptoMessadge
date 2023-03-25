@@ -41,8 +41,13 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
         user_record = request.record
         
         # retrieve cached secS and remove from dictionary 
-        ctx = self.secs.get(username, "")
-        self.secs.pop(username, None)
+        ctx = self.secs.pop(username, None)
+        
+        if ctx == None:
+            context.set_code(grpc.StatusCode.UNAUTHENTICATED)
+            context.set_details("Invalid register phase")
+            return opaque_pb2.FinalizeResponse(registered=False)
+
         if ( self.db.retrieve_record(username) != b""):
             context.set_code(grpc.StatusCode.ALREADY_EXISTS)
             context.set_details("User already exists")
