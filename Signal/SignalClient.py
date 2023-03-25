@@ -35,6 +35,7 @@ class SignalClient:
         self.device_id = device_id
         self.token = token
         self.dbpath = dbpath
+        self.recipient_id = ""
         
         if exists(certfile):
             with open(certfile, 'rb') as f:

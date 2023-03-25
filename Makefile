@@ -4,7 +4,7 @@ LD_LIBRARY_PATH = .
 GRPC_TRACE = all
 
 client:
-	python3 client.py
+	python3 ChatApplication.py
 
 server:
 	python3 server.py
@@ -40,9 +40,3 @@ clear_db:
 	rm -f *.db
 
 clean: clear_cert clear_json clear_db
-
-test:
-	python3 test.py
-
-ui:
-	python3 ChatApplication.py
