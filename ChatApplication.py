@@ -178,7 +178,9 @@ class ChatSearchUI(QWidget):
     def search_message(self):
         message = self.message_input.text()
         if message:
+            print(self.message_input)
             self.message_input.clear()
+            
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
