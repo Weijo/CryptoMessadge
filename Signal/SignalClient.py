@@ -111,7 +111,7 @@ class SignalClient:
             except AttributeError as e:
                 print(e)
 
-            #self.save_messages_to_local(publication.senderId, self.client_id, message_plain_text.decode('utf-8'))
+            self.save_messages_to_local(publication.senderId, self.client_id, message_plain_text.decode('utf-8'))
 
             yield message_plain_text.decode('utf-8')
 
@@ -121,7 +121,7 @@ class SignalClient:
         DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
         # convo_id = self.get_other_user_id(senderId, recipientId)
-        convo_id = senderId + "-" + recipientId
+        convo_id = self.client_id + "-" + self.get_other_user_id(senderId, recipientId)
 
         # Define password and salt
         password = b"1ct2205?!"
@@ -135,7 +135,7 @@ class SignalClient:
             'utf-8')
 
         # connect to database.
-        conn = Util.messageStorage.connect_to_database(senderId)
+        conn = Util.messageStorage.connect_to_database(self.client_id)
 
         # If already got entry in database, get the latest messageId, and increase that number by 1.
         if not Util.messageStorage.database_empty(conn):
@@ -150,6 +150,7 @@ class SignalClient:
 
         # Retrieve the data from the table and print it in a table format
         Util.messageStorage.print_messages(conn)
+        print("-" * 80)
 
         # Close the database connection
         Util.messageStorage.close_database(conn)
@@ -165,6 +166,7 @@ class SignalClient:
         try:
             # encrypt message first
             out_goging_message = self.encrypt_message(message, receiver_id)
+
         except UntrustedIdentityException:
             print("publish - Unable to encrypt message to be sent, because a new session started on the recipient side.")
 
@@ -185,7 +187,7 @@ class SignalClient:
         return response_receiver_key
 
     def encrypt_message(self, message, receiver_id):
-
+        self.save_messages_to_local(self.client_id, receiver_id, message)
         response_receiver_key = self.GetReceiverKey(receiver_id, True)
 
         # build session
