@@ -79,8 +79,8 @@ class OpaqueAuthenticationServicer(opaque_pb2_grpc.OpaqueAuthenticationServicer)
         auth = request.auth
 
         # Retrieve cached auth and remove from dictionary
-        auth0 = self.auths.get(username, "")
-        self.auths.pop(username, None)
+        auth0 = self.auths.pop(username, None)
+        
 
         try:
             opaque.UserAuth(auth, auth0)
