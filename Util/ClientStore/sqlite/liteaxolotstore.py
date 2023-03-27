@@ -3,9 +3,7 @@ from .liteidentitykeystore import LiteIdentityKeyStore
 from .liteprekeystore import LitePreKeyStore
 from .litesessionstore import LiteSessionStore
 from .litesignedprekeystore import LiteSignedPreKeyStore
-from .litesenderkeystore import LiteSenderKeyStore
 import sqlite3
-
 
 class LiteAxolotlStore(AxolotlStore):
     def __init__(self, db):
@@ -16,7 +14,6 @@ class LiteAxolotlStore(AxolotlStore):
         self.preKeyStore = LitePreKeyStore(conn)
         self.signedPreKeyStore = LiteSignedPreKeyStore(conn)
         self.sessionStore = LiteSessionStore(conn)
-        self.senderKeyStore = LiteSenderKeyStore(conn)
 
     def __str__(self):
         return self._db
@@ -89,9 +86,3 @@ class LiteAxolotlStore(AxolotlStore):
 
     def removeSignedPreKey(self, signedPreKeyId):
         self.signedPreKeyStore.removeSignedPreKey(signedPreKeyId)
-
-    def loadSenderKey(self, senderKeyName):
-        return self.senderKeyStore.loadSenderKey(senderKeyName)
-
-    def storeSenderKey(self, senderKeyName, senderKeyRecord):
-        self.senderKeyStore.storeSenderKey(senderKeyName, senderKeyRecord)
