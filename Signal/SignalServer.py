@@ -1,5 +1,4 @@
 import logging
-import json
 import base64
 import grpc
 from proto import signalc_pb2
@@ -12,7 +11,6 @@ from os.path import exists
 
 logger = logging.getLogger(__name__)
 
-CLIENT_STORE_FILEPATH = "client_store.json"
 OPAQUE_HOST = 'localhost:50051'
 CERTIFILE_FILE = './localhost.crt'
 
@@ -66,27 +64,10 @@ class ClientKey:
             "signed_prekey_signature": base64.b64encode(self.signed_prekey_signature).decode('utf-8')
         }
 
-
 class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
     def __init__(self):
         self.queues = {}
         self.my_store = LiteAxolotlStore("ServerStore.db")
-
-    def GetClientStore(self):
-        data = {}
-        file_exists = exists(CLIENT_STORE_FILEPATH)
-        if file_exists:
-            with open(CLIENT_STORE_FILEPATH) as json_file:
-                data = json.load(json_file)
-        return data
-
-    def SaveClientStore(self, client_combine_key):
-        data = self.GetClientStore()
-
-        data[client_combine_key.client_id] = client_combine_key.to_dict()
-
-        with open(CLIENT_STORE_FILEPATH, 'w') as f:
-            json.dump(data, f, ensure_ascii=False)
 
     def RegisterBundleKey(self, request, context):
         client_combine_key = ClientKey(request.clientId, request.registrationId, request.deviceId,
@@ -95,8 +76,6 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
 
         logger.debug('***** CLIENT REGISTER KEYS *****')
         logger.debug(request)
-
-        self.SaveClientStore(client_combine_key)
 
         self.my_store.storeClientIdentityKey(client_combine_key.device_id, client_combine_key.client_id, client_combine_key.registration_id, client_combine_key.identity_key_public)
         self.my_store.storeClientPreKeys(client_combine_key.registration_id, client_combine_key.prekeys)

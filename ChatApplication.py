@@ -121,10 +121,8 @@ class LoginWidget(QWidget):
             self.signalClient.token = token
             self.signalClient.client_id = username
             self.signalClient.dbpath = username+"_Store.db"
-            
-            # Register keys
+
             self.signalClient.subscribe()
-            # self.signalClient.register_keys(1, 1)
 
             self.login_signal.emit() # emit the login signal
         else:
@@ -143,10 +141,9 @@ class LoginWidget(QWidget):
             logger.info("Successfully registered")
 
             # Register keys
-            # self.signalClient.client_id = username
             self.signalClient.client_id = username
             self.signalClient.dbpath = username+"_Store.db"
-            self.signalClient.register_keys(1, 1)
+            self.signalClient.register_keys(1)
 
             self.popupDialog("Success", "User registered successfully!", QMessageBox.Information)
         else:
@@ -243,7 +240,6 @@ class ChatMessagingUI(QWidget):
         self.signalClient = signalClient
         self.username = self.signalClient.client_id
         self.recipient_id = self.signalClient.recipient_id
-        self.MESSAGE_FILEPATH = self.username + "_messages.json"
 
         self.initUI()
 

@@ -1,5 +1,3 @@
-import base64
-import json
 import logging
 import threading
 
@@ -67,7 +65,7 @@ class SignalClient:
         response = self.stub.Subscribe(request, metadata=[('token', self.token)])
         self.listen()
 
-    def register_keys(self, device_id, signed_prekey_id):
+    def register_keys(self, device_id):
         self.my_store = LiteAxolotlStore(self.dbpath)
         self.manager = AxolotlManager(self.my_store, self.client_id)
 
@@ -139,11 +137,6 @@ class SignalClient:
             )
 
             response = self.stub.addNewSignedPreKey(request, metadata=[('token', self.token)])
-
-
-    def SaveClientStore(self, clientkey):
-        with open(self.client_id + ".json", 'w') as f:
-            json.dump(clientkey, f, ensure_ascii=False)
 
     def listen(self):
         threading.Thread(target=self.heard, daemon=True).start()
@@ -240,16 +233,12 @@ class SignalClient:
         # build session
         my_session_builder = SessionBuilder(self.my_store, self.my_store, self.my_store, self.my_store, receiver_id, 1)
 
-        # combine key for receiver
-        # identity public key
         receiver_identity_key_public = IdentityKey(DjbECPublicKey(response_receiver_key.identityKeyPublic[1:]))
 
         # pre key
-        # receiver_prekey = PreKeyRecord(serialized=response_receiver_key.preKey)
         receiver_prekey = DjbECPublicKey(response_receiver_key.preKey.publicKey[1:])
 
         # signed prekey
-        # receiver_signed_prekey_pair = SignedPreKeyRecord(serialized=response_receiver_key.signedPreKey)
         receiver_signed_prekey_pair = DjbECPublicKey(response_receiver_key.signedPreKey[1:])
 
         # combine prekey bundle
@@ -269,13 +258,10 @@ class SignalClient:
         # encrypt message
         outgoing_message = my_session_cipher.encrypt(bytes(message, 'utf-8'))
         outgoging_message_serialize = outgoing_message.serialize()
-        # print("Encrypt Message - Out Going Message =", outgoging_message_serialize)
-        # return encrypt message
 
         return outgoging_message_serialize
 
     def decrypt_message(self, message, sender_id):
-        # print("Decrypt Message - In Coming Message Encrypted=", message)
         incoming_message = PreKeyWhisperMessage(serialized=message)
         # init session to decrypt
         my_session_cipher = SessionCipher(self.my_store, self.my_store, self.my_store, self.my_store, sender_id, 1)
@@ -289,9 +275,7 @@ class SignalClient:
         except InvalidMessageException:
             print("Decrypt Message - Unable to decrypt, because sender and recipient are the same.")
         else:
-            # print("Decrypt Message - Plain Text Message =", message_plain_text)
             return message_plain_text
-        # return encrypt message
         return
 
     def close(self):
