@@ -4,7 +4,8 @@ import Util.messageStorage
 from Signal.SignalClient import SignalClient
 from Opaque.OpaqueClient import OpaqueClient
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import QObject, pyqtSignal, QThread
+from PyQt5.QtCore import QObject, pyqtSignal, QThread, Qt
+from PyQt5.QtGui import QKeySequence
 
 logger = logging.getLogger("Client")
 
@@ -50,13 +51,14 @@ class LoginWidget(QWidget):
         self.signalClient = signalClient
 
     def initUI(self):
-        self.setWindowTitle('Chat Messager')
+        self.setWindowTitle('Chat Messenger')
 
         # set window size and position
         self.setGeometry(100, 100, 600, 500)
 
         # create header label
         header = QLabel('Crypto Messadge Login Page')
+        header.setAlignment(Qt.AlignCenter)
         header.setStyleSheet('font-size: 20pt; font-weight: bold;')
 
         # create username label and text field
@@ -106,6 +108,10 @@ class LoginWidget(QWidget):
         layout.setContentsMargins(50, 50, 50, 50)
 
         self.setLayout(layout)
+
+        # Create the shortcut to press the button
+        shortcut = QShortcut(QKeySequence(Qt.Key_Return), self)
+        shortcut.activated.connect(login_button.click)
 
     def login(self):
         username = self.username.text()
@@ -167,11 +173,12 @@ class ChatSearchUI(QWidget):
         self.signalClient = signalClient
 
     def initUI(self):
-        self.setWindowTitle('Chat Messager')
+        self.setWindowTitle('Chat Messenger')
         self.setGeometry(100, 100, 600, 500)
 
         # create header label
         header = QLabel('Crypto Messadge Search Chat')
+        header.setAlignment(Qt.AlignCenter)
         header.setStyleSheet('font-size: 20pt; font-weight: bold;')
 
         # Create widgets
@@ -196,6 +203,10 @@ class ChatSearchUI(QWidget):
 
         # Connect signals and slots
         self.search_button.clicked.connect(self.search_message)
+
+        # Create the shortcut to press the button
+        shortcut = QShortcut(QKeySequence(Qt.Key_Return), self)
+        shortcut.activated.connect(self.search_button.click)
 
     def search_message(self):
         recipient_id = self.message_input.text()
@@ -277,6 +288,10 @@ class ChatMessagingUI(QWidget):
         self.message_listener.message_received.connect(self.update_messages)
         self.message_listener_thread.started.connect(self.message_listener.run)
         self.message_listener_thread.start()
+
+        # Create the shortcut to press the button
+        shortcut = QShortcut(QKeySequence(Qt.Key_Return), self)
+        shortcut.activated.connect(self.send_button.click)
 
         # populate data
         # Define password and salt
