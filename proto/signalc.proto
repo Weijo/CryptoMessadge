@@ -25,6 +25,20 @@ message PreKeyRecord {
     bytes publicKey = 2;
 }
 
+message renewPreKeyRequest {
+    int32 registrationId = 1;
+    repeated PreKeyRecord preKeys = 2;
+}
+
+message renewSignedPreKeyRequest {
+    int32 registrationId = 1;
+
+    int32 signedPreKeyId = 2;
+    bytes signedPreKey = 3;
+
+    bytes signedPreKeySignature = 4;
+}
+
 message SignalKeysUserRequest {
   string clientId = 1;
   bool isEncrypting = 2;
@@ -63,7 +77,8 @@ message Publication {
 service SignalKeyDistribution {
       rpc RegisterBundleKey (SignalRegisterKeysRequest) returns (BaseResponse);
       rpc GetKeyBundleByUserId (SignalKeysUserRequest) returns (SignalKeysUserResponse);
-
+      rpc addNewPreKey(renewPreKeyRequest) returns (BaseResponse);
+      rpc addNewSignedPreKey(renewSignedPreKeyRequest) returns (BaseResponse);
       rpc Subscribe (SubscribeAndListenRequest) returns (BaseResponse);
       rpc Listen (SubscribeAndListenRequest) returns (stream Publication);
       rpc Publish (PublishRequest) returns (BaseResponse);

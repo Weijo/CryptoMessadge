@@ -61,11 +61,16 @@ class SignalClient:
         self.my_store = LiteAxolotlStore(self.dbpath)
         self.manager = AxolotlManager(self.my_store, self.client_id)
 
+        self.renewSignedPreKey()
+
         request = signalc_pb2.SubscribeAndListenRequest(clientId=self.client_id)
         response = self.stub.Subscribe(request, metadata=[('token', self.token)])
         self.listen()
 
     def register_keys(self, device_id, signed_prekey_id):
+        self.my_store = LiteAxolotlStore(self.dbpath)
+        self.manager = AxolotlManager(self.my_store, self.client_id)
+
         self.manager.level_prekeys()
         signedprekey  = self.manager.load_latest_signed_prekey(generate=True)
 
@@ -90,10 +95,51 @@ class SignalClient:
             signedPreKeySignature=signedprekey.getSignature(),
         )
 
-        response = self.stub.RegisterBundleKey(request, metadata=[('token', self.token)])
+        response = self.stub.RegisterBundleKey(request, metadata=[])
 
         if response.message == 'success':
-            self.my_store.setPrekeyAsSent(my_list)   # hardcoded, to change
+            self.my_store.setPrekeyAsSent(my_list)
+
+    def renewPreKey(self):
+        if self.manager is not None:
+            self.manager.level_prekeys()
+
+            prekeys = []
+            my_list = []
+            for prekey_detail in self.my_store.loadUnsentPendingPreKeys():
+                prekey = signalc_pb2.PreKeyRecord(
+                    id=prekey_detail.getId(),
+                    publicKey=prekey_detail.getKeyPair().getPublicKey().serialize(),
+                )
+                prekeys.append(prekey)
+                my_list.append(prekey_detail.getId())
+
+            request = signalc_pb2.renewPreKeyRequest(
+                registrationId=self.my_store.getLocalRegistrationId(),
+                preKeys=prekeys
+            )
+
+            response = self.stub.addNewPreKey(request, metadata=[('token', self.token)])
+
+            if response.message == 'success':
+                self.my_store.setPrekeyAsSent(my_list)
+
+    def renewSignedPreKey(self):
+        if self.my_store.loadLatestSignedPreKey() is None:
+            self.manager.generate_signed_prekey()
+            new_signed_prekey = self.my_store.loadLatestSignedPreKey()
+            
+            request = signalc_pb2.renewSignedPreKeyRequest(
+                registrationId=self.my_store.getLocalRegistrationId(),
+
+                signedPreKeyId=new_signed_prekey.getId(),
+                signedPreKey=new_signed_prekey.getKeyPair().getPublicKey().serialize(),
+
+                signedPreKeySignature=new_signed_prekey.getSignature(),
+            )
+
+            response = self.stub.addNewSignedPreKey(request, metadata=[('token', self.token)])
+
 
     def SaveClientStore(self, clientkey):
         with open(self.client_id + ".json", 'w') as f:
@@ -225,6 +271,7 @@ class SignalClient:
         outgoging_message_serialize = outgoing_message.serialize()
         # print("Encrypt Message - Out Going Message =", outgoging_message_serialize)
         # return encrypt message
+
         return outgoging_message_serialize
 
     def decrypt_message(self, message, sender_id):
@@ -234,6 +281,9 @@ class SignalClient:
         my_session_cipher = SessionCipher(self.my_store, self.my_store, self.my_store, self.my_store, sender_id, 1)
         try:
             message_plain_text = my_session_cipher.decryptPkmsg(incoming_message)
+
+            if not self.my_store.loadPreKeys():
+                self.renewPreKey()
         except UntrustedIdentityException:
             print("Decrypt Message - Unable to decrypt, because a new session started on the sender side.")
         except InvalidMessageException:

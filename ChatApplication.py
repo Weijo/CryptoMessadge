@@ -124,7 +124,7 @@ class LoginWidget(QWidget):
             
             # Register keys
             self.signalClient.subscribe()
-            self.signalClient.register_keys(1, 1)
+            # self.signalClient.register_keys(1, 1)
 
             self.login_signal.emit() # emit the login signal
         else:
@@ -144,7 +144,9 @@ class LoginWidget(QWidget):
 
             # Register keys
             # self.signalClient.client_id = username
-            # self.signalClient.register_keys(1, 1)
+            self.signalClient.client_id = username
+            self.signalClient.dbpath = username+"_Store.db"
+            self.signalClient.register_keys(1, 1)
 
             self.popupDialog("Success", "User registered successfully!", QMessageBox.Information)
         else:

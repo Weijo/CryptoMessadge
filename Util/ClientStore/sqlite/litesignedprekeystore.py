@@ -37,14 +37,14 @@ class LiteSignedPreKeyStore(SignedPreKeyStore):
         return results
     
     def loadLatestSignedPreKey(self):
-        q = "SELECT record FROM signed_prekeys ORDER BY timestamp DESC"
+        q = "select record, timestamp from signed_prekeys WHERE timestamp > datetime('now', '-7 day')"
 
         cursor = self.dbConn.cursor()
         cursor.execute(q,)
 
         result = cursor.fetchone()
 
-        return SignedPreKeyRecord(serialized=result[0])
+        return SignedPreKeyRecord(serialized=result[0]) if result else None
 
     def storeSignedPreKey(self, signedPreKeyId, signedPreKeyRecord):
         #q = "DELETE FROM signed_prekeys WHERE prekey_id = ?"

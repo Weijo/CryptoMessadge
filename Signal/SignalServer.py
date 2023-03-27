@@ -88,7 +88,6 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
         with open(CLIENT_STORE_FILEPATH, 'w') as f:
             json.dump(data, f, ensure_ascii=False)
 
-    @require_auth
     def RegisterBundleKey(self, request, context):
         client_combine_key = ClientKey(request.clientId, request.registrationId, request.deviceId,
                                        request.identityKeyPublic, request.preKeys,
@@ -155,6 +154,19 @@ class SignalKeyDistribution(signalc_pb2_grpc.SignalKeyDistributionServicer):
                 self.my_store.removeClientPreKey(response.registrationId, response.preKey.id)
 
         return response
+    
+    @require_auth
+    def addNewPreKey(self, request, context):
+        self.my_store.storeClientPreKeys(request.registrationId, request.preKeys)
+        return signalc_pb2.BaseResponse(message='success')
+    
+    @require_auth
+    def addNewSignedPreKey(self, request, context):
+        print(request)
+
+        self.my_store.storeClientSignedPreKey(request.registrationId, request.signedPreKeyId, request.signedPreKey, request.signedPreKeySignature)
+
+        return signalc_pb2.BaseResponse(message='success')
 
     @require_auth
     def Publish(self, request, context):

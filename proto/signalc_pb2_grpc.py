@@ -24,6 +24,16 @@ class SignalKeyDistributionStub(object):
                 request_serializer=proto_dot_signalc__pb2.SignalKeysUserRequest.SerializeToString,
                 response_deserializer=proto_dot_signalc__pb2.SignalKeysUserResponse.FromString,
                 )
+        self.addNewPreKey = channel.unary_unary(
+                '/signalc.SignalKeyDistribution/addNewPreKey',
+                request_serializer=proto_dot_signalc__pb2.renewPreKeyRequest.SerializeToString,
+                response_deserializer=proto_dot_signalc__pb2.BaseResponse.FromString,
+                )
+        self.addNewSignedPreKey = channel.unary_unary(
+                '/signalc.SignalKeyDistribution/addNewSignedPreKey',
+                request_serializer=proto_dot_signalc__pb2.renewSignedPreKeyRequest.SerializeToString,
+                response_deserializer=proto_dot_signalc__pb2.BaseResponse.FromString,
+                )
         self.Subscribe = channel.unary_unary(
                 '/signalc.SignalKeyDistribution/Subscribe',
                 request_serializer=proto_dot_signalc__pb2.SubscribeAndListenRequest.SerializeToString,
@@ -51,6 +61,18 @@ class SignalKeyDistributionServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def GetKeyBundleByUserId(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def addNewPreKey(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def addNewSignedPreKey(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -86,6 +108,16 @@ def add_SignalKeyDistributionServicer_to_server(servicer, server):
                     servicer.GetKeyBundleByUserId,
                     request_deserializer=proto_dot_signalc__pb2.SignalKeysUserRequest.FromString,
                     response_serializer=proto_dot_signalc__pb2.SignalKeysUserResponse.SerializeToString,
+            ),
+            'addNewPreKey': grpc.unary_unary_rpc_method_handler(
+                    servicer.addNewPreKey,
+                    request_deserializer=proto_dot_signalc__pb2.renewPreKeyRequest.FromString,
+                    response_serializer=proto_dot_signalc__pb2.BaseResponse.SerializeToString,
+            ),
+            'addNewSignedPreKey': grpc.unary_unary_rpc_method_handler(
+                    servicer.addNewSignedPreKey,
+                    request_deserializer=proto_dot_signalc__pb2.renewSignedPreKeyRequest.FromString,
+                    response_serializer=proto_dot_signalc__pb2.BaseResponse.SerializeToString,
             ),
             'Subscribe': grpc.unary_unary_rpc_method_handler(
                     servicer.Subscribe,
@@ -143,6 +175,40 @@ class SignalKeyDistribution(object):
         return grpc.experimental.unary_unary(request, target, '/signalc.SignalKeyDistribution/GetKeyBundleByUserId',
             proto_dot_signalc__pb2.SignalKeysUserRequest.SerializeToString,
             proto_dot_signalc__pb2.SignalKeysUserResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def addNewPreKey(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/signalc.SignalKeyDistribution/addNewPreKey',
+            proto_dot_signalc__pb2.renewPreKeyRequest.SerializeToString,
+            proto_dot_signalc__pb2.BaseResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def addNewSignedPreKey(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/signalc.SignalKeyDistribution/addNewSignedPreKey',
+            proto_dot_signalc__pb2.renewSignedPreKeyRequest.SerializeToString,
+            proto_dot_signalc__pb2.BaseResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
