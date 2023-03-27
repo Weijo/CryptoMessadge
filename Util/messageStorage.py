@@ -22,15 +22,6 @@ def create_cipher_suite(key):
     return cipher_suite
 
 
-# def create_database():
-#     conn = sqlite3.connect('messageStorage.db')
-#     conn.execute('''CREATE TABLE IF NOT EXISTS messages
-#                  (messageid INT PRIMARY KEY NOT NULL,
-#                  name TEXT NOT NULL,
-#                  body TEXT NOT NULL,
-#                  datetime TEXT NOT NULL);''')
-#     return conn
-
 # connect to database (create table if doesn't exist)
 def connect_to_database(username):
     conn = sqlite3.connect(username + '_messageStorage.db')
@@ -71,7 +62,9 @@ def print_messages(conn):
     for row in cursor:
         encrypted_message = row[4]
         datetime_str = datetime.strptime(row[5], DATETIME_FORMAT).strftime(DATETIME_FORMAT)
-        print('{0:<10} {1:<10} {2:<10} {3:<20} {4:<20} {5:<20}'.format(row[0], row[1], row[2], row[3], encrypted_message, datetime_str))
+        print(
+            '{0:<10} {1:<10} {2:<10} {3:<20} {4:<20} {5:<20}'.format(row[0], row[1], row[2], row[3], encrypted_message,
+                                                                     datetime_str))
 
 
 def get_latest_message_id(conn):

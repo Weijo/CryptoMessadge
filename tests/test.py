@@ -13,7 +13,7 @@ SIGNAL_PORT = 50052
 CERTIFILE_FILE = './localhost.crt'
 
 def main():
-    logger.info("Poggurz")
+    logger.info("Start")
 
     with OpaqueClient(HOST, OPAQUE_PORT, CERTIFILE_FILE) as opaqueClient:
         # Authentication
